@@ -1,70 +1,97 @@
 <!doctype html>
 <html lang="it">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow, noimageindex, noarchive">
-<meta name="googlebot" content="noindex, nofollow, noimageindex, noarchive">
-<title>Collette – Stato pagamenti</title>
-<style>
-  :root { --maxw: 900px; }
-  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-         margin: 2rem auto; max-width: var(--maxw); padding: 0 1rem; }
-  h1 { margin: 0 0 .25rem 0; }
-  .muted { color: #666; font-size: .95rem; margin: 0 0 1.25rem 0; }
-  section { margin: 1.5rem 0 2rem; }
-  h2 { margin: 0 0 .25rem 0; }
-  .meta { color:#555; font-size:.92rem; margin:0 0 .75rem 0; }
-  .grid { display:grid; grid-template-columns: 1fr auto; align-items:center; gap:.2rem .75rem; }
-  .name { padding:.25rem 0; }
-  .status { justify-self:end; font-variant-numeric: tabular-nums; }
-  .paid { font-weight:600; }
-  .out  { opacity:.7; font-style: italic; }
-  .pending { opacity:.9; }
-  footer { margin-top:2rem; font-size:.9rem; color:#666; }
-</style>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- scoraggia l'indicizzazione -->
+  <meta name="robots" content="noindex, nofollow, noimageindex, noarchive">
+  <meta name="googlebot" content="noindex, nofollow, noimageindex, noarchive">
+  <title>Collette</title>
+  <style>
+    :root { --maxw: 900px; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+           margin: 2rem auto; max-width: var(--maxw); padding: 0 1rem; }
+    h1 { margin: 0 0 .75rem 0; }
+    section { margin: 1.5rem 0 2rem; }
+    h2 { margin: 0 0 .5rem 0; }
+    .grid { display:grid; grid-template-columns: 1fr auto; gap:.2rem .75rem; align-items:center; }
+    .name { padding:.25rem 0; }
+    .status { justify-self:end; font-variant-numeric: tabular-nums; }
+    .paid { font-weight:600; }
+    .out  { opacity:.8; font-style: italic; }
+    .pending { opacity:.95; }
+    .empty { margin: 2rem 0; font-size: 1.05rem; color: #444; }
+    footer { margin-top:2rem; font-size:.9rem; color:#666; }
+  </style>
+</head>
 <body>
-  <h1>Collette – Stato pagamenti</h1>
-  <!--<p class="muted">Aggiornamento in sola lettura. Lo stato indicato per ciascun bimbo è:
-     <em>“XX,XX€”</em> se ha versato (totale o parziale), <em>“non pagato”</em> se non ha ancora versato,
-     <em>“non partecipa”</em> se non aderisce.</p>-->
+  <h1>Collette</h1>
   <div id="container"></div>
-  <footer id="updated" class="muted"></footer>
+  <footer id="updated"></footer>
 
-<script>
-const EURO = n => (n ?? 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '€';
-const slug = s => s.normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase()
-                 .replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+  <script>
+    // formattazione € stile it-IT: "12,00€"
+    const EURO = n => (n ?? 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '€';
+    // stessa funzione di slug usata nell'admin
+    const slug = s => s.normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase()
+                     .replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
 
-fetch('./data/state.json?cb='+Date.now()).then(r=>r.json()).then(state => {
-  const wrap = document.getElementById('container');
-  const roster = (state.roster||[]).slice().sort((a,b)=>a.localeCompare(b));
-  (state.collections||[]).forEach(coll => {
-    const sec = document.createElement('section');
-    const h2 = document.createElement('h2'); h2.textContent = coll.title||coll.id;
-    const meta = document.createElement('div'); meta.className='meta';
-    if (typeof coll.amount_due === 'number') meta.textContent = 'Quota attesa: ' + EURO(coll.amount_due);
-    const grid = document.createElement('div'); grid.className = 'grid';
+    fetch('./data/state.json?cb=' + Date.now())
+      .then(r => r.json())
+      .then(state => {
+        const wrap   = document.getElementById('container');
+        const footer = document.getElementById('updated');
 
-    roster.forEach(name => {
-      const id = slug(name);
-      const st = coll.statuses?.[id];
-      let label = 'non pagato', cls = 'pending';
-      if (st && st.type === 'out') { label = 'non partecipa'; cls = 'out'; }
-      else if (st && (st.type === 'paid' || st.type === 'partial')) {
-        label = EURO(st.amount || 0); cls = 'paid';
-      }
-      const nameEl = document.createElement('div'); nameEl.className='name'; nameEl.textContent = name;
-      const statusEl = document.createElement('div'); statusEl.className='status '+cls; statusEl.textContent = label;
-      grid.appendChild(nameEl); grid.appendChild(statusEl);
-    });
+        const roster = (state.roster || []).slice().sort((a,b)=>a.localeCompare(b));
+        const cols   = (state.collections || []);
 
-    sec.appendChild(h2); sec.appendChild(meta); sec.appendChild(grid);
-    wrap.appendChild(sec);
-  });
-  document.getElementById('updated').textContent = 'Ultimo aggiornamento: ' +
-    new Date(state.updated || Date.now()).toLocaleString();
-});
-</script>
+        // nessuna colletta → mostra solo il messaggio semplice
+        if (!cols.length) {
+          wrap.innerHTML = '<p class="empty">Non ci sono collette attive</p>';
+          if (footer) footer.textContent = ''; // niente "ultimo aggiornamento"
+          return;
+        }
+
+        // ci sono collette → renderizza ogni sezione
+        cols.forEach(coll => {
+          const sec  = document.createElement('section');
+          const h2   = document.createElement('h2'); h2.textContent = coll.title || coll.id || 'Colletta';
+          const grid = document.createElement('div'); grid.className = 'grid';
+
+          roster.forEach(name => {
+            const id = slug(name);
+            const st = coll.statuses && coll.statuses[id];
+
+            let label = 'non pagato', cls = 'pending';
+            if (st && st.type === 'out') { label = 'non partecipa'; cls = 'out'; }
+            else if (st && (st.type === 'paid' || st.type === 'partial')) {
+              label = EURO(st.amount || 0); cls = 'paid';
+            }
+
+            const nameEl   = document.createElement('div'); nameEl.className = 'name';   nameEl.textContent = name;
+            const statusEl = document.createElement('div'); statusEl.className = 'status ' + cls; statusEl.textContent = label;
+
+            grid.appendChild(nameEl);
+            grid.appendChild(statusEl);
+          });
+
+          sec.appendChild(h2);
+          sec.appendChild(grid);
+          wrap.appendChild(sec);
+        });
+
+        if (footer) {
+          const ts = state.updated ? new Date(state.updated) : null;
+          footer.textContent = ts ? ('Ultimo aggiornamento: ' + ts.toLocaleString()) : '';
+        }
+      })
+      .catch(() => {
+        // fallback molto semplice in caso di errore di fetch
+        const wrap = document.getElementById('container');
+        wrap.innerHTML = '<p class="empty">Non ci sono collette attive</p>';
+        const footer = document.getElementById('updated');
+        if (footer) footer.textContent = '';
+      });
+  </script>
 </body>
 </html>
-
