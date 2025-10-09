@@ -46,11 +46,15 @@
         "francesco-b": {
           "type": "paid",
           "amount": 27
+        },
+        "maria-elena": {
+          "type": "partial",
+          "amount": 25
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-09T11:16:32.832Z"
+  "updated": "2025-10-09T12:00:55.063Z"
 }
