@@ -38,11 +38,15 @@
         "bia": {
           "type": "partial",
           "amount": 25
+        },
+        "laura": {
+          "type": "paid",
+          "amount": 27
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-09T10:45:10.904Z"
+  "updated": "2025-10-09T11:04:30.033Z"
 }
