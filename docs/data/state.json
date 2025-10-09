@@ -34,11 +34,15 @@
         "alessia-b": {
           "type": "paid",
           "amount": 10
+        },
+        "achille": {
+          "type": "paid",
+          "amount": 27
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-09T09:46:51.439Z"
+  "updated": "2025-10-09T10:02:44.835Z"
 }
