@@ -39,10 +39,10 @@ body {
 .section-header:hover {
   background-color: rgba(0,0,0,0.03);
 }
-.section-header i {
+.section-header i.fa-chevron-down {
   transition: transform 0.3s;
 }
-.collapsed-section .section-header i {
+.collapsed-section .section-header i.fa-chevron-down {
   transform: rotate(-90deg);
 }
 .status-badge {
@@ -662,3 +662,91 @@ function updateCfgCollapse() {
   const status = byId('cfgStatus');
   const body = byId('cfgBody');
   if (!card) return;
+  
+  if (tokenPresent()) {
+    card.classList.add('collapsed-section');
+    if (body) body.style.display = 'none';
+    if (status) {
+      status.textContent = 'Token presente ✓';
+      status.className = 'status-badge badge bg-success';
+    }
+  } else {
+    card.classList.remove('collapsed-section');
+    if (body) body.style.display = 'block';
+    if (status) {
+      status.textContent = 'Nessun token';
+      status.className = 'status-badge badge bg-secondary';
+    }
+  }
+}
+
+function updateStateCollapse() {
+  const card = byId('stateCard');
+  const body = byId('stateBody');
+  if (!card) return;
+  
+  if (tokenPresent() && DB) {
+    card.classList.add('collapsed-section');
+    if (body) body.style.display = 'none';
+  } else {
+    card.classList.remove('collapsed-section');
+    if (body) body.style.display = 'block';
+  }
+}
+
+function showSavebar() {
+  const bar = byId('savebar');
+  if (bar && DB && CURRENT) {
+    bar.style.display = 'block';
+  }
+}
+
+function updateSavebarTitle() {
+  const nameSpan = byId('currentCollectionName');
+  if (nameSpan && CURRENT) {
+    nameSpan.textContent = CURRENT.title || CURRENT.id || 'Colletta';
+  }
+}
+
+// Toggle handlers for collapsible sections
+byId('cfgHeader').addEventListener('click', () => {
+  const card = byId('cfgCard');
+  const body = byId('cfgBody');
+  if (card.classList.contains('collapsed-section')) {
+    card.classList.remove('collapsed-section');
+    body.style.display = 'block';
+  } else {
+    card.classList.add('collapsed-section');
+    body.style.display = 'none';
+  }
+});
+
+byId('stateHeader').addEventListener('click', () => {
+  const card = byId('stateCard');
+  const body = byId('stateBody');
+  if (card.classList.contains('collapsed-section')) {
+    card.classList.remove('collapsed-section');
+    body.style.display = 'block';
+  } else {
+    card.classList.add('collapsed-section');
+    body.style.display = 'none';
+  }
+});
+
+function autoLoadState() {
+  const cfg = LS.get();
+  if (!byId('owner').value) byId('owner').value = cfg.owner || DEFAULT_OWNER;
+  if (!byId('repo').value)  byId('repo').value  = cfg.repo  || DEFAULT_REPO;
+
+  if (tokenPresent() && byId('load')) {
+    byId('load').click();
+  }
+}
+
+// Initialize on page load
+updateCfgCollapse();
+updateStateCollapse();
+autoLoadState();
+</script>
+</body>
+</html>
