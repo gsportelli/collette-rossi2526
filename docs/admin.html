@@ -452,6 +452,7 @@ async function loadState() {
     renderDB();
     byId('stateStatus').textContent = 'Caricato ✓';
     byId('stateStatus').className = 'status-badge badge bg-success';
+    updateStateCollapse();
     showSavebar();
   }catch(e){ 
     alert('Errore nel caricamento: '+e.message); 
@@ -613,8 +614,6 @@ function addNewCollection() {
   DB.collections.unshift({ id:nid, title, amount_due: due, archived:false, archived_at:null, statuses:{} });
   renderDB();
 }
-
-byId('addColl').onclick = addNewCollection;
 
 byId('allNP').onclick = ()=>{ readRoster(); ensureStatuses(); DB.roster.forEach(n=>{ delete CURRENT.statuses[slug(n)]; }); renderGrid(); };
 byId('allOUT').onclick = ()=>{ readRoster(); ensureStatuses(); DB.roster.forEach(n=>{ CURRENT.statuses[slug(n)]={type:'out'}; }); renderGrid(); };
