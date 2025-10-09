@@ -62,7 +62,7 @@ body {
 }
 .grid-header {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto; /* nome | stato */
   gap: 0.5rem;
   align-items: center;
   padding: 0.75rem;
@@ -73,7 +73,7 @@ body {
 }
 .grid-row {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto; /* nome | stato */
   gap: 0.5rem;
   align-items: center;
   padding: 0.75rem;
@@ -127,18 +127,28 @@ body {
 .status-switch label:hover {
   color: #212529;
 }
-.status-switch-unpaid input[type="radio"]:checked + label {
-  background: #dc3545;
+
+.status-switch input[type="radio"]:checked + label {
+  background: white;
+  color: #212529;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.status-switch input[type="radio"]:checked + label.status-switch-unpaid {
+  background: #fa8072; /* salmon */
   color: white;
 }
-.status-switch-out input[type="radio"]:checked + label {
-  background: #ffc107;
+
+.status-switch input[type="radio"]:checked + label.status-switch-out {
+  background: #ffb347; /* amber soft */
   color: #212529;
 }
-.status-switch-paid input[type="radio"]:checked + label {
-  background: #28a745;
+
+.status-switch input[type="radio"]:checked + label.status-switch-paid {
+  background: #18bc9c; /* flatly emerald/teal */
   color: white;
 }
+
 .amount-input-group {
   display: flex;
   gap: 0.25rem;
@@ -232,19 +242,67 @@ body {
 
   <!-- Section 1: Config -->
   <div class="card mb-3 shadow-sm" id="cfgCard">
-    <div class="card-body">
-      <div class="section-header" id="cfgHeader">
-        <div class="d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">
-            <i class="fas fa-chevron-down me-2"></i>
-            <i class="fas fa-cog text-primary me-2"></i>
-            1) Configurazione
-          </h5>
-          <span class="status-badge badge bg-secondary" id="cfgStatus">Nessun token</span>
-        </div>
+    <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div>
+        <h5 class="mb-1">
+          <i class="fas fa-cog text-primary me-2"></i>
+          1) Configurazione
+        </h5>
+        <span class="status-badge badge bg-secondary" id="cfgStatus">Nessun token</span>
       </div>
-      
-      <div id="cfgBody" class="mt-3">
+      <button id="cfgOpenBtn" class="btn btn-primary align-self-start" data-bs-toggle="modal" data-bs-target="#cfgModal">
+        <i class="fas fa-sliders-h me-1"></i>Apri configurazione
+      </button>
+    </div>
+  </div>
+
+  <!-- Section 2: State and Roster -->
+  <div class="card mb-3 shadow-sm" id="stateCard">
+    <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div>
+        <h5 class="mb-1">
+          <i class="fas fa-users text-success me-2"></i>
+          2) Stato e Roster
+        </h5>
+        <span class="status-badge badge bg-info" id="stateStatus">Non caricato</span>
+      </div>
+      <button id="stateOpenBtn" class="btn btn-outline-primary align-self-start" data-bs-toggle="modal" data-bs-target="#stateModal">
+        <i class="fas fa-database me-1"></i>Gestisci stato
+      </button>
+    </div>
+  </div>
+
+  <!-- Section 3: Collections -->
+  <div class="card mb-3 shadow-sm" id="collectionsCard" hidden>
+    <div class="card-body">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+        <h5 class="mb-0">
+          <i class="fas fa-folder-open text-warning me-2"></i>
+          3) Collette
+        </h5>
+        <button id="collConfigBtn" class="btn btn-outline-secondary align-self-start" data-bs-toggle="modal" data-bs-target="#collConfigModal">
+          <i class="fas fa-pen-to-square me-1"></i>Configura colletta
+        </button>
+      </div>
+
+      <div class="grid-header">
+        <span><i class="fas fa-user me-1"></i>Nome</span>
+        <span class="text-center">Stato</span>
+      </div>
+      <div id="grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Config Modal -->
+<div class="modal fade" id="cfgModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="fas fa-cog me-2"></i>Configurazione</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+      </div>
+      <div class="modal-body">
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label">Owner</label>
@@ -260,34 +318,29 @@ body {
           <input id="token" type="password" class="form-control" placeholder="ghp_...">
           <small class="form-text text-muted">Il token resta solo in questo browser (localStorage).</small>
         </div>
-        <div class="d-flex gap-2 mt-3">
-          <button id="saveCfg" class="btn btn-primary">
-            <i class="fas fa-save me-1"></i>Salva su questo dispositivo
-          </button>
-          <button id="clearCfg" class="btn btn-outline-secondary">
-            <i class="fas fa-trash me-1"></i>Pulisci config
-          </button>
-        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="clearCfg" class="btn btn-outline-secondary">
+          <i class="fas fa-trash me-1"></i>Pulisci config
+        </button>
+        <button id="saveCfg" class="btn btn-primary">
+          <i class="fas fa-save me-1"></i>Salva su questo dispositivo
+        </button>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Section 2: State and Roster -->
-  <div class="card mb-3 shadow-sm" id="stateCard">
-    <div class="card-body">
-      <div class="section-header" id="stateHeader">
-        <div class="d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">
-            <i class="fas fa-chevron-down me-2"></i>
-            <i class="fas fa-users text-success me-2"></i>
-            2) Stato e Roster
-          </h5>
-          <span class="status-badge badge bg-info" id="stateStatus">Non caricato</span>
-        </div>
+<!-- State Modal -->
+<div class="modal fade" id="stateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="fas fa-users me-2"></i>Stato e Roster</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
       </div>
-      
-      <div id="stateBody" class="mt-3">
-        <div class="d-flex gap-2 mb-3">
+      <div class="modal-body">
+        <div class="d-flex flex-wrap gap-2 mb-3">
           <button id="load" class="btn btn-outline-primary">
             <i class="fas fa-download me-1"></i>Carica stato
           </button>
@@ -303,70 +356,56 @@ body {
           <label class="form-label">
             <i class="fas fa-list me-1"></i>Roster (un nome per riga – usa "Nome + iniziale cognome")
           </label>
-          <textarea id="roster" class="form-control" rows="6"></textarea>
+          <textarea id="roster" class="form-control" rows="8"></textarea>
         </div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Section 3: Collections -->
-  <div class="card mb-3 shadow-sm" id="collectionsCard" hidden>
-    <div class="card-body">
-      <h5 class="mb-3">
-        <i class="fas fa-folder-open text-warning me-2"></i>
-        3) Collette
-      </h5>
-      
-      <div class="mb-3">
-        <label class="form-label">Seleziona colletta</label>
-        <select id="selColl" class="form-select">
-          <option value="__new__">+ Nuova colletta</option>
-        </select>
+<!-- Collection Config Modal -->
+<div class="modal fade" id="collConfigModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title"><i class="fas fa-folder-open me-2"></i>Configura colletta</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
       </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Seleziona colletta</label>
+          <select id="selColl" class="form-select">
+            <option value="__new__">+ Nuova colletta</option>
+          </select>
+        </div>
 
-      <div class="row g-3 mb-3">
-        <div class="col-md-5">
-          <label class="form-label">Titolo</label>
-          <input id="collTitle" type="text" class="form-control">
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">ID</label>
-          <input id="collId" type="text" class="form-control" placeholder="es: regalo-natale-2025">
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Quota attesa (€)</label>
-          <input id="collDue" type="number" step="1" min="0" class="form-control">
-        </div>
-        <div class="col-md-1">
-          <label class="form-label">Archiviata</label>
-          <div class="form-check form-switch mt-2">
-            <input id="collArchived" type="checkbox" class="form-check-input" role="switch" style="width: 3rem; height: 1.5rem;">
+        <div class="row g-3 mb-3">
+          <div class="col-md-5">
+            <label class="form-label">Titolo</label>
+            <input id="collTitle" type="text" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">ID</label>
+            <input id="collId" type="text" class="form-control" placeholder="es: regalo-natale-2025">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Quota attesa (€)</label>
+            <input id="collDue" type="number" step="1" min="0" class="form-control">
+          </div>
+          <div class="col-md-1">
+            <label class="form-label">Archiviata</label>
+            <div class="form-check form-switch mt-2">
+              <input id="collArchived" type="checkbox" class="form-check-input" role="switch" style="width: 3rem; height: 1.5rem;">
+            </div>
           </div>
         </div>
+        <small class="text-muted d-block">ID stabile (niente spazi), usato come chiave.</small>
       </div>
-      <small class="text-muted d-block mb-3">ID stabile (niente spazi), usato come chiave.</small>
-
-      <!-- <div class="d-flex gap-2 mb-3 flex-wrap">
-        <span class="text-muted">Imposta rapidamente:</span>
-        <button id="allNP" class="btn btn-sm btn-outline-secondary">
-          <i class="fas fa-times-circle me-1"></i>Tutti "non pagato"
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-check me-1"></i>Chiudi
         </button>
-        <button id="allOUT" class="btn btn-sm btn-outline-warning">
-          <i class="fas fa-user-slash me-1"></i>Tutti "non partecipa"
-        </button>
-        <button id="allFULL" class="btn btn-sm btn-outline-success">
-          <i class="fas fa-check-circle me-1"></i>Tutti "quota piena"
-        </button>
-      </div> -->
-
-      <hr>
-
-      <div class="grid-header">
-        <span><i class="fas fa-user me-1"></i>Nome</span>
-        <span class="text-center">Stato</span>
-        <span class="text-center">Importo</span>
       </div>
-      <div id="grid"></div>
     </div>
   </div>
 </div>
@@ -788,7 +827,21 @@ function confirmPaymentChange(prevLabel, nextLabel) {
     el.querySelector('#'+modalId+'-confirm').addEventListener('click', () => {
       modal.hide(); resolve('confirm');
     });
-    el.addEventListener('hidden.bs.modal', () => { el.remove(); });
+    // Restore on ESC or any other way the modal is closed
+    el.addEventListener('hidden.bs.modal', () => {
+      // If neither button was pressed, treat as revert
+      if (!el.dataset.choice) {
+        resolve('revert');
+      }
+      el.remove();
+    });
+    // Mark which button was pressed
+    el.querySelector('#'+modalId+'-revert').addEventListener('click', () => {
+      el.dataset.choice = 'revert';
+    });
+    el.querySelector('#'+modalId+'-confirm').addEventListener('click', () => {
+      el.dataset.choice = 'confirm';
+    });
     modal.show();
   });
 }
@@ -1118,45 +1171,55 @@ function renderGrid(){
     switchDiv.appendChild(r2); switchDiv.appendChild(l2);
     switchDiv.appendChild(r3); switchDiv.appendChild(l3);
 
-    // --- IMPORTO
-    const amt = document.createElement('input');
-    amt.type='number'; amt.step='1'; amt.min='0';
-    amt.className='form-control form-control-sm'; amt.style.width='80px';
-    const btnFull = document.createElement('button');
-    btnFull.textContent='Tutto'; btnFull.type='button'; btnFull.className='btn btn-sm btn-outline-success';
-    const amtGroup = document.createElement('div'); amtGroup.className = 'amount-input-group';
-    amtGroup.appendChild(amt); amtGroup.appendChild(btnFull);
-
-    // --- UTILITIES DI RIGA
-    const readNextStatusFromControls = () => {
-      if (r2.checked) return { type:'out' };
-      if (r3.checked) {
-        const v = Number(amt.value || 0);
-        return { type: (v >= due ? 'paid':'partial'), amount: v };
-      }
-      return { type:'unpaid', amount:0 };
-    };
+    // --- Helpers di riga
     const applyStatusToModel = (s) => {
       if (!s || s.type === 'unpaid') { delete CURRENT.statuses[id]; return; }
       if (s.type === 'out') { CURRENT.statuses[id] = { type:'out' }; return; }
-      CURRENT.statuses[id] = { type:(s.type==='paid'?'paid':'partial'), amount:Number(s.amount||0) };
+      CURRENT.statuses[id] = { type:(s.amount >= due ? 'paid':'partial'), amount:Number(s.amount||0) };
     };
     const applyStatusToControls = (s) => {
       if (!s || s.type === 'unpaid') {
-        r1.checked = true; r2.checked=false; r3.checked=false; amt.value='';
+        r1.checked = true; r2.checked=false; r3.checked=false;
+        setPaidLabel(null);
       } else if (s.type === 'out') {
-        r1.checked = false; r2.checked=true; r3.checked=false; amt.value='';
+        r1.checked = false; r2.checked=true; r3.checked=false;
+        setPaidLabel(null);
       } else {
-        r1.checked = false; r2.checked=false; r3.checked=true; amt.value = Number(s.amount||0);
+        r1.checked = false; r2.checked=false; r3.checked=true;
+        setPaidLabel(Number(s.amount||0));
       }
+    };
+    const setPaidLabel = (amountOrNull) => {
+      if (amountOrNull == null || isNaN(amountOrNull)) {
+        l3.textContent = 'Ha versato';
+      } else {
+        const euro = amountOrNull.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+        l3.textContent = `Ha versato ${euro}€`;
+      }
+    };
+    const normalizeStatusForDisplay = (st, due) => {
+      if (!st || st.type === 'unpaid') return { type: 'unpaid', amount: 0 };
+      if (st.type === 'out') return { type: 'out' };
+      const amt = Number(st.amount || 0);
+      return { type: (amt >= (due||0) ? 'paid' : 'partial'), amount: amt };
     };
 
     // Stato iniziale UI + "committed"
     const initial = normalizeStatusForDisplay(st, due);
     applyStatusToControls(initial);
-    let committed = cloneStatus(initial); // ultimo stato confermato
+    let committed = JSON.parse(JSON.stringify(initial)); // snapshot confermato
 
-    // --- HANDLER CAMBI STATO
+    function isDowngrade(prev, next) {
+      const wasPaidLike = prev && (prev.type === 'paid' || prev.type === 'partial');
+      if (!wasPaidLike) return false;
+      if (!next || next.type === 'unpaid' || next.type === 'out') return true;
+      if (next.type === 'paid' || next.type === 'partial') {
+        const a = Number(prev.amount || 0), b = Number(next.amount || 0);
+        return a !== b;
+      }
+      return false;
+    }
+
     async function handlePotentialDowngrade(nextCandidate) {
       const prevNorm = normalizeStatusForDisplay(committed, due);
       const nextNorm = normalizeStatusForDisplay(nextCandidate, due);
@@ -1166,53 +1229,72 @@ function renderGrid(){
         const nextLabel = formatStatus(nextNorm.type, nextNorm.amount);
         const choice = await confirmPaymentChange(prevLabel, nextLabel);
         if (choice === 'revert') {
-          // torna al precedente
           applyStatusToControls(prevNorm);
           applyStatusToModel(prevNorm);
           showToast('Ripristinato: ' + prevLabel, 'info');
           return false;
         }
-        // confermato: applica e "committa"
         applyStatusToModel(nextNorm);
-        committed = cloneStatus(nextNorm);
+        committed = JSON.parse(JSON.stringify(nextNorm));
+        applyStatusToControls(nextNorm);
         showToast('Modifica confermata: ' + prevLabel + ' → ' + nextLabel, 'warning');
         return true;
       } else {
-        // Non è downgrade: applica senza modale e "committa"
         applyStatusToModel(nextNorm);
-        committed = cloneStatus(nextNorm);
+        committed = JSON.parse(JSON.stringify(nextNorm));
+        applyStatusToControls(nextNorm);
         return true;
       }
     }
 
+    // --- Handlers radio
     r1.onchange = async () => { if (r1.checked) await handlePotentialDowngrade({type:'unpaid', amount:0}); };
     r2.onchange = async () => { if (r2.checked) await handlePotentialDowngrade({type:'out'}); };
-    r3.onchange = async () => {
-      if (r3.checked) {
-        const v = Number(amt.value || 0);
-        await handlePotentialDowngrade({type:(v>=due?'paid':'partial'), amount:v});
+
+    // Apertura dialog su "Ha versato"
+    async function openPaidPrompt(prefillFromCurrentSelection) {
+      // Valore di default: importo già registrato, altrimenti quota attesa arrotondata
+      const defaultAmount = prefillFromCurrentSelection && (committed.type==='paid' || committed.type==='partial')
+        ? Number(committed.amount||0)
+        : Math.round(due);
+
+      const valStr = await promptInput('Importo versato (in €):', String(defaultAmount), 'Inserisci solo il numero, senza simbolo €');
+      if (valStr === null) {
+        // Annullato: torna allo stato precedente
+        applyStatusToControls(committed);
+        return null;
       }
+      const v = Number(valStr.replace(',', '.'));
+      if (!isFinite(v) || v < 0) {
+        showToast('Importo non valido', 'error');
+        applyStatusToControls(committed);
+        return null;
+      }
+      return { type: (v >= due ? 'paid' : 'partial'), amount: v };
+    }
+
+    // 1) Primo click: seleziona + prompt
+    r3.onchange = async () => {
+      if (!r3.checked) return;
+      const nextCandidate = await openPaidPrompt(false);
+      if (!nextCandidate) return; // annullato
+      await handlePotentialDowngrade(nextCandidate);
     };
 
-    // Per l’importo: valutiamo al "commit" (blur) per evitare modali mentre si digita
-    amt.addEventListener('blur', async () => {
-      if (!r3.checked) return; // l'importo conta solo se "Ha versato" è selezionato
-      const v = Number(amt.value || 0);
-      await handlePotentialDowngrade({type:(v>=due?'paid':'partial'), amount:v});
+    // 2) Click sull’etichetta quando già selezionato → edit importo
+    l3.addEventListener('click', async (ev) => {
+      // Se non è selezionato, lasciamo che l’onchange del radio gestisca tutto
+      if (!r3.checked) return;
+      ev.preventDefault(); // evitiamo il toggle del radio
+      const nextCandidate = await openPaidPrompt(true);
+      if (!nextCandidate) return; // annullato
+      await handlePotentialDowngrade(nextCandidate);
     });
-
-    btnFull.onclick = async () => {
-      r3.checked = true;
-      amt.value = Math.round(due);
-      await handlePotentialDowngrade({type:'paid', amount: Math.round(due)});
-    };
 
     rowDiv.appendChild(nameDiv);
     rowDiv.appendChild(switchDiv);
-    rowDiv.appendChild(amtGroup);
     grid.appendChild(rowDiv);
   });
-
 }
 
 async function addNewCollection() {
@@ -1359,13 +1441,11 @@ function canLoadState() {
 function updateCfgCollapse() {
   const card = byId('cfgCard');
   const status = byId('cfgStatus');
-  const body = byId('cfgBody');
-  if (!card) return;
+  const openBtn = byId('cfgOpenBtn');
+  if (card) card.classList.remove('collapsed-section');
   
-  if (canLoadState()) {
-    card.classList.add('collapsed-section');
-    if (body) body.style.display = 'none';
-    if (status) {
+  if (status) {
+    if (canLoadState()) {
       if (isLocalEnvironment()) {
         status.textContent = 'Locale (no token) ✓';
         status.className = 'status-badge badge bg-info';
@@ -1373,28 +1453,54 @@ function updateCfgCollapse() {
         status.textContent = 'Token presente ✓';
         status.className = 'status-badge badge bg-success';
       }
-    }
-  } else {
-    card.classList.remove('collapsed-section');
-    if (body) body.style.display = 'block';
-    if (status) {
+    } else {
       status.textContent = 'Token necessario';
       status.className = 'status-badge badge bg-warning';
+    }
+  }
+  
+  if (openBtn) {
+    if (canLoadState()) {
+      openBtn.classList.remove('btn-warning');
+      if (!openBtn.classList.contains('btn-primary')) {
+        openBtn.classList.add('btn-primary');
+      }
+      openBtn.removeAttribute('title');
+    } else {
+      openBtn.classList.remove('btn-primary');
+      openBtn.classList.add('btn-warning');
+      openBtn.setAttribute('title', 'Imposta il token GitHub per abilitare il caricamento da remoto');
     }
   }
 }
 
 function updateStateCollapse() {
   const card = byId('stateCard');
-  const body = byId('stateBody');
-  if (!card) return;
+  const status = byId('stateStatus');
+  const openBtn = byId('stateOpenBtn');
+  if (card) card.classList.remove('collapsed-section');
   
-  if (canLoadState() && DB) {
-    card.classList.add('collapsed-section');
-    if (body) body.style.display = 'none';
-  } else {
-    card.classList.remove('collapsed-section');
-    if (body) body.style.display = 'block';
+  if (status && !DB) {
+    if (!canLoadState()) {
+      status.textContent = 'Token necessario';
+      status.className = 'status-badge badge bg-warning';
+    } else {
+      status.textContent = 'Non caricato';
+      status.className = 'status-badge badge bg-info';
+    }
+  }
+  
+  if (openBtn) {
+    openBtn.disabled = false;
+    if (!canLoadState()) {
+      openBtn.classList.remove('btn-outline-primary');
+      openBtn.classList.add('btn-outline-warning');
+      openBtn.setAttribute('title', 'Configura il token per poter caricare o salvare');
+    } else {
+      openBtn.classList.remove('btn-outline-warning');
+      openBtn.classList.add('btn-outline-primary');
+      openBtn.removeAttribute('title');
+    }
   }
 }
 
@@ -1412,30 +1518,7 @@ function updateSavebarTitle() {
   }
 }
 
-// Toggle handlers for collapsible sections
-byId('cfgHeader').addEventListener('click', () => {
-  const card = byId('cfgCard');
-  const body = byId('cfgBody');
-  if (card.classList.contains('collapsed-section')) {
-    card.classList.remove('collapsed-section');
-    body.style.display = 'block';
-  } else {
-    card.classList.add('collapsed-section');
-    body.style.display = 'none';
-  }
-});
-
-byId('stateHeader').addEventListener('click', () => {
-  const card = byId('stateCard');
-  const body = byId('stateBody');
-  if (card.classList.contains('collapsed-section')) {
-    card.classList.remove('collapsed-section');
-    body.style.display = 'block';
-  } else {
-    card.classList.add('collapsed-section');
-    body.style.display = 'none';
-  }
-});
+// Toggle handlers removed: sections are now managed via modals.
 
 function autoLoadState() {
   const cfg = LS.get();
