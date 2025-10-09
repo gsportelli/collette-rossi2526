@@ -1,26 +1,35 @@
 {
   "roster": [
-    "Alessia B.",
-    "Andrea C.",
-    "Aurora L.",
-    "Chiara B.",
-    "Diego R.",
-    "Emma V.",
-    "Filippo D.",
-    "Gabriele P.",
-    "Giulia T.",
-    "Luca S.",
-    "Marco N.",
-    "Marta C.",
-    "Matteo F.",
-    "NicolÃ² R.",
-    "Sara M."
+    "Achille",
+    "Alessandro",
+    "Amelie",
+    "Bia",
+    "Dafne",
+    "Emanuele",
+    "Enea",
+    "Francesco B.",
+    "Francesco M.",
+    "Ginevra",
+    "Gioele",
+    "Giulia Maria",
+    "Giulio",
+    "Laura",
+    "Leonardo",
+    "Ludovica",
+    "Maria Elena",
+    "Martina Maria",
+    "Matilde B.",
+    "Matilde T.",
+    "Mattia",
+    "Pietro",
+    "Tommaso",
+    "Zoe"
   ],
   "collections": [
     {
-      "id": "regalo-natale-2025",
-      "title": "Regalo di Natale 2025",
-      "amount_due": 10,
+      "id": "girogirolibro-quadernone",
+      "title": "Giro giro libro (12€ o 10€) + quadernone (15€)",
+      "amount_due": 27,
       "statuses": {
         "alessia-b": {
           "type": "paid",
@@ -31,5 +40,5 @@
       "archived_at": null
     }
   ],
-  "updated": "2025-10-09T09:44:24.522Z"
+  "updated": "2025-10-09T09:46:51.439Z"
 }
