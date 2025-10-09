@@ -50,11 +50,15 @@
         "maria-elena": {
           "type": "partial",
           "amount": 25
+        },
+        "martina-maria": {
+          "type": "paid",
+          "amount": 25
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-09T12:02:37.850Z"
+  "updated": "2025-10-09T22:21:07.184Z"
 }
