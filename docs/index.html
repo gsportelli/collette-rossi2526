@@ -43,8 +43,9 @@
         const footer = document.getElementById('updated');
 
         const roster = (state.roster || []).slice().sort((a,b)=>a.localeCompare(b));
-        const cols   = (state.collections || []);
-
+        const colsAll = (state.collections || []);
+        const cols    = colsAll.filter(c => !c.archived);  // ← nasconde le archiviate
+        
         // nessuna colletta → mostra solo il messaggio semplice
         if (!cols.length) {
           wrap.innerHTML = '<p class="empty">Non ci sono collette attive</p>';
