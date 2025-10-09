@@ -32,7 +32,6 @@
 </head>
 <body>
   <h1>Collette</h1>
-  <div id="progressbar"></div>
   <div id="container"></div>
   <footer id="updated"></footer>
 
@@ -48,7 +47,6 @@
       .then(state => {
         const wrap   = document.getElementById('container');
         const footer = document.getElementById('updated');
-        const progressbar = document.getElementById('progressbar');
 
         const roster = (state.roster || []).slice().sort((a,b)=>a.localeCompare(b));
         const colsAll = (state.collections || []);
@@ -100,7 +98,6 @@
               </section>
             `;
           });
-          progressbar.innerHTML = html;
         } else {
           progressbar.innerHTML = '';
         }
@@ -113,11 +110,53 @@
         }
 
         // ci sono collette → renderizza ogni sezione
+        wrap.innerHTML = ''; // clear container
         cols.forEach(coll => {
           const sec  = document.createElement('section');
-          const h2   = document.createElement('h2'); h2.textContent = coll.title || coll.id || 'Colletta';
-          const grid = document.createElement('div'); grid.className = 'grid';
 
+          // Title
+          const h2   = document.createElement('h2');
+          h2.textContent = coll.title || coll.id || 'Colletta';
+          sec.appendChild(h2);
+
+          // Progress bar row (below title)
+          const statuses = coll.statuses || {};
+          const participating = roster.filter(name => {
+            const id = slug(name);
+            return !(statuses[id] && statuses[id].type === 'out');
+          });
+          const paid = participating.filter(name => {
+            const id = slug(name);
+            return statuses[id] && (statuses[id].type === 'paid' || statuses[id].type === 'partial');
+          });
+          const collected = paid.reduce((sum, name) => {
+            const id = slug(name);
+            return sum + (statuses[id]?.amount ?? 0);
+          }, 0);
+          const expected = (coll.amount_due ?? 0) * participating.length;
+          const percent = expected > 0 ? Math.min(100, Math.round((collected/expected)*100)) : 0;
+
+          const progressDiv = document.createElement('div');
+          progressDiv.style.marginBottom = '1.2rem';
+          progressDiv.innerHTML = `
+            <div style="display:flex;align-items:center;gap:1rem;">
+              <div style="flex:1;">
+                <div style="background:#eee;border-radius:6px;overflow:hidden;height:18px;position:relative;">
+                  <div style="background:#2f81f7;height:100%;width:${percent}%;transition:width .3s;border-radius:6px;"></div>
+                  <div style="position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:.95rem;color:#222;">
+                    ${paid.length} / ${participating.length} partecipanti
+                  </div>
+                </div>
+              </div>
+              <div style="white-space:nowrap;font-size:.98rem;">
+                ${EURO(collected)} / ${EURO(expected)}
+              </div>
+            </div>
+          `;
+          sec.appendChild(progressDiv);
+
+          // Grid
+          const grid = document.createElement('div'); grid.className = 'grid';
           roster.forEach(name => {
             const id = slug(name);
             const st = coll.statuses && coll.statuses[id];
@@ -135,7 +174,6 @@
             grid.appendChild(statusEl);
           });
 
-          sec.appendChild(h2);
           sec.appendChild(grid);
           wrap.appendChild(sec);
         });
@@ -151,8 +189,6 @@
         wrap.innerHTML = '<p class="empty">Non ci sono collette attive</p>';
         const footer = document.getElementById('updated');
         if (footer) footer.textContent = '';
-        const progressbar = document.getElementById('progressbar');
-        if (progressbar) progressbar.innerHTML = '';
       });
   </script>
 </body>
