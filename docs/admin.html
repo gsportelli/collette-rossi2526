@@ -16,6 +16,12 @@
 body {
   padding-bottom: 3rem;
 }
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+}
 .sticky-save-bar {
   position: sticky;
   top: 0;
@@ -51,7 +57,7 @@ body {
 }
 .grid-header {
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  grid-template-columns: 1fr auto auto;
   gap: 0.5rem;
   align-items: center;
   padding: 0.75rem;
@@ -62,7 +68,7 @@ body {
 }
 .grid-row {
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  grid-template-columns: 1fr auto auto;
   gap: 0.5rem;
   align-items: center;
   padding: 0.75rem;
@@ -87,10 +93,46 @@ body {
   gap: 0.25rem;
   min-width: 80px;
 }
-.status-option label {
-  font-size: 0.75rem;
-  margin: 0;
-  text-align: center;
+.status-switch {
+  display: inline-flex;
+  background: #e9ecef;
+  border-radius: 20px;
+  padding: 3px;
+  gap: 3px;
+}
+.status-switch input[type="radio"] {
+  display: none;
+}
+.status-switch label {
+  padding: 0.4rem 0.8rem;
+  border-radius: 17px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #6c757d;
+  font-weight: 500;
+  white-space: nowrap;
+  user-select: none;
+}
+.status-switch input[type="radio"]:checked + label {
+  background: white;
+  color: #212529;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.status-switch label:hover {
+  color: #212529;
+}
+.status-switch-unpaid input[type="radio"]:checked + label {
+  background: #dc3545;
+  color: white;
+}
+.status-switch-out input[type="radio"]:checked + label {
+  background: #ffc107;
+  color: #212529;
+}
+.status-switch-paid input[type="radio"]:checked + label {
+  background: #28a745;
+  color: white;
 }
 .amount-input-group {
   display: flex;
@@ -127,8 +169,9 @@ body {
     padding-bottom: 0.5rem;
     border-bottom: 1px solid rgba(0,0,0,0.1);
   }
-  .status-option {
-    min-width: 100%;
+  .status-switch {
+    width: 100%;
+    justify-content: center;
   }
   .amount-input-group {
     justify-content: center;
@@ -147,6 +190,9 @@ body {
 </style>
 </head>
 <body>
+
+<!-- Toast Container -->
+<div class="toast-container"></div>
 
 <!-- Sticky Save Bar -->
 <div class="sticky-save-bar" id="savebar" style="display:none;">
@@ -310,9 +356,8 @@ body {
 
       <div class="grid-header">
         <span><i class="fas fa-user me-1"></i>Nome</span>
-        <span class="text-center">Non pagato</span>
-        <span class="text-center">Non partecipa</span>
-        <span class="text-center">Ha versato</span>
+        <span class="text-center">Stato</span>
+        <span class="text-center">Importo</span>
       </div>
       <div id="grid"></div>
     </div>
@@ -350,6 +395,149 @@ const slug = (s) => {
   return noMarks.toLowerCase().replace(re, '-').replace(/(^-|-$)/g, '');
 };
 const byId = id => document.getElementById(id);
+
+function showToast(message, type = 'success') {
+  const container = document.querySelector('.toast-container');
+  const toastId = 'toast-' + Date.now();
+  
+  const icons = {
+    success: 'fa-check-circle',
+    error: 'fa-exclamation-circle',
+    warning: 'fa-exclamation-triangle',
+    info: 'fa-info-circle'
+  };
+  
+  const bgColors = {
+    success: 'bg-success',
+    error: 'bg-danger',
+    warning: 'bg-warning',
+    info: 'bg-info'
+  };
+  
+  const toastHTML = `
+    <div id="${toastId}" class="toast align-items-center text-white ${bgColors[type]} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">
+          <i class="fas ${icons[type]} me-2"></i>${message}
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  `;
+  
+  container.insertAdjacentHTML('beforeend', toastHTML);
+  const toastElement = document.getElementById(toastId);
+  const toast = new bootstrap.Toast(toastElement, { delay: type === 'error' ? 5000 : 3000 });
+  toast.show();
+  
+  toastElement.addEventListener('hidden.bs.toast', () => {
+    toastElement.remove();
+  });
+}
+
+function confirmAction(message) {
+  return new Promise((resolve) => {
+    const modalId = 'confirmModal-' + Date.now();
+    const modalHTML = `
+      <div class="modal fade" id="${modalId}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="fas fa-question-circle me-2"></i>Conferma</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">${message}</div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+              <button type="button" class="btn btn-primary" id="${modalId}-confirm">Conferma</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    const modalElement = document.getElementById(modalId);
+    const modal = new bootstrap.Modal(modalElement);
+    
+    document.getElementById(modalId + '-confirm').addEventListener('click', () => {
+      modal.hide();
+      resolve(true);
+    });
+    
+    modalElement.addEventListener('hidden.bs.modal', () => {
+      if (!modalElement.dataset.confirmed) {
+        resolve(false);
+      }
+      modalElement.remove();
+    });
+    
+    modalElement.addEventListener('click', (e) => {
+      if (e.target.id === modalId + '-confirm') {
+        modalElement.dataset.confirmed = 'true';
+      }
+    });
+    
+    modal.show();
+  });
+}
+
+function promptInput(message, defaultValue = '') {
+  return new Promise((resolve) => {
+    const modalId = 'promptModal-' + Date.now();
+    const modalHTML = `
+      <div class="modal fade" id="${modalId}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Input</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <label class="form-label">${message}</label>
+              <input type="text" class="form-control" id="${modalId}-input" value="${defaultValue}">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+              <button type="button" class="btn btn-primary" id="${modalId}-confirm">OK</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    const modalElement = document.getElementById(modalId);
+    const inputElement = document.getElementById(modalId + '-input');
+    const modal = new bootstrap.Modal(modalElement);
+    
+    document.getElementById(modalId + '-confirm').addEventListener('click', () => {
+      modalElement.dataset.value = inputElement.value;
+      modal.hide();
+    });
+    
+    inputElement.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        modalElement.dataset.value = inputElement.value;
+        modal.hide();
+      }
+    });
+    
+    modalElement.addEventListener('shown.bs.modal', () => {
+      inputElement.focus();
+      inputElement.select();
+    });
+    
+    modalElement.addEventListener('hidden.bs.modal', () => {
+      const value = modalElement.dataset.value;
+      modalElement.remove();
+      resolve(value || null);
+    });
+    
+    modal.show();
+  });
+}
+
 
 function storageUsable() {
   try {
@@ -410,23 +598,54 @@ cfgLoadToForm();
 byId('saveCfg').addEventListener('click', () => {
   LS.set({ owner: val('owner'), repo: val('repo') || DEFAULT_REPO, token: val('token') });
   updateCfgCollapse();
-  const alertDiv = document.createElement('div');
-  alertDiv.className = 'alert alert-success alert-dismissible fade show';
-  alertDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>Config salvata' + (SafeStore.ok ? '' : ' (localStorage non disponibile: salvataggio temporaneo)') + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
-  byId('cfgCard').parentNode.insertBefore(alertDiv, byId('cfgCard'));
-  setTimeout(() => alertDiv.remove(), 3000);
+  showToast('Config salvata' + (SafeStore.ok ? '' : ' (localStorage non disponibile: salvataggio temporaneo)'), 'success');
 });
 
-byId('clearCfg').addEventListener('click', () => {
-  if (confirm('Rimuovere config localmente?')) { 
+byId('clearCfg').addEventListener('click', async () => {
+  if (await confirmAction('Rimuovere la configurazione salvata localmente?')) { 
     LS.clear(); 
     cfgLoadToForm(); 
     updateCfgCollapse();
+    showToast('Configurazione rimossa', 'info');
   }
 });
 
 async function ghGet(path){ 
   const {owner,repo,token}=LS.get();
+  
+  // Check if running locally (file:// or localhost)
+  if (isLocalEnvironment()) {
+    // Try to fetch from local file first
+    // Try both with and without 'docs/' prefix
+    const pathsToTry = [
+      path,  // Try as-is first (e.g., 'docs/data/state.json')
+      path.replace(/^docs\//, '')  // Remove 'docs/' prefix (e.g., 'data/state.json')
+    ];
+    
+    for (const localPath of pathsToTry) {
+      try {
+        const r = await fetch(localPath);
+        if (r.ok) {
+          const content = await r.text();
+          return {
+            sha: 'local-' + Date.now(),
+            content: b64encodeUtf8(content)
+          };
+        }
+      } catch (e) {
+        // Continue to next path
+      }
+    }
+    
+    console.log('Local file not found at:', pathsToTry);
+    
+    // Fallback to GitHub API only if token is present
+    if (!token) {
+      throw new Error('File locale non trovato in: ' + pathsToTry.join(' o '));
+    }
+  }
+  
+  // Use GitHub API (both for remote and as fallback for local with token)
   const url=`https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
   const headers = {'Accept':'application/vnd.github+json'};
   if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -437,6 +656,39 @@ async function ghGet(path){
 
 async function ghPut(path, message, base64Content, sha){
   const {owner,repo,token}=LS.get();
+  
+  // Check if running locally
+  if (isLocalEnvironment() && sha && sha.startsWith('local-')) {
+    // Save to local file (download)
+    const content = b64decodeUtf8(base64Content);
+    const blob = new Blob([content], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = path.split('/').pop();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-warning alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.maxWidth = '500px';
+    alertDiv.innerHTML = '<i class="fas fa-download me-2"></i>File scaricato! Sostituisci <code>' + path + '</code> con il file scaricato e ricarica la pagina.<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+    document.body.appendChild(alertDiv);
+    setTimeout(() => alertDiv.remove(), 8000);
+    
+    return {
+      content: { sha: 'local-' + Date.now() }
+    };
+  }
+  
+  // Use GitHub API for remote saves (requires token)
+  if (!token) {
+    throw new Error('Token GitHub necessario per salvare su GitHub');
+  }
+  
   const url=`https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
   const body={ message, content: base64Content, sha };
   const r=await fetch(url,{method:'PUT', headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'}, body: JSON.stringify(body)});
@@ -454,8 +706,9 @@ async function loadState() {
     byId('stateStatus').className = 'status-badge badge bg-success';
     updateStateCollapse();
     showSavebar();
+    showToast('Stato caricato con successo', 'success');
   }catch(e){ 
-    alert('Errore nel caricamento: '+e.message); 
+    showToast('Errore nel caricamento: ' + e.message, 'error');
   }
 }
 
@@ -528,51 +781,61 @@ function renderGrid(){
     nameDiv.className = 'person-name';
     nameDiv.innerHTML = `<i class="fas fa-user-circle text-muted"></i><span>${name}</span>`;
 
+    // Create status switch
+    const switchDiv = document.createElement('div');
+    switchDiv.className = 'status-switch';
+    
     const r1 = document.createElement('input'); 
     r1.type='radio'; 
     r1.name='r-'+id; 
-    r1.className='form-check-input';
+    r1.id = 'r1-'+id;
+    r1.value = 'unpaid';
     const l1 = document.createElement('label'); 
-    l1.className='form-check-label'; 
     l1.textContent='Non pagato';
-    const opt1 = document.createElement('div');
-    opt1.className = 'status-option';
-    opt1.appendChild(r1);
-    opt1.appendChild(l1);
-
+    l1.htmlFor = 'r1-'+id;
+    l1.className = 'status-switch-unpaid';
+    
     const r2 = document.createElement('input'); 
     r2.type='radio'; 
     r2.name='r-'+id; 
-    r2.className='form-check-input';
+    r2.id = 'r2-'+id;
+    r2.value = 'out';
     const l2 = document.createElement('label'); 
-    l2.className='form-check-label'; 
     l2.textContent='Non partecipa';
-    const opt2 = document.createElement('div');
-    opt2.className = 'status-option';
-    opt2.appendChild(r2);
-    opt2.appendChild(l2);
-
+    l2.htmlFor = 'r2-'+id;
+    l2.className = 'status-switch-out';
+    
     const r3 = document.createElement('input'); 
     r3.type='radio'; 
     r3.name='r-'+id; 
-    r3.className='form-check-input';
+    r3.id = 'r3-'+id;
+    r3.value = 'paid';
+    const l3 = document.createElement('label'); 
+    l3.textContent='Ha versato';
+    l3.htmlFor = 'r3-'+id;
+    l3.className = 'status-switch-paid';
+    
+    switchDiv.appendChild(r1);
+    switchDiv.appendChild(l1);
+    switchDiv.appendChild(r2);
+    switchDiv.appendChild(l2);
+    switchDiv.appendChild(r3);
+    switchDiv.appendChild(l3);
+
     const amt = document.createElement('input'); 
     amt.type='number'; 
     amt.step='1'; 
     amt.min='0'; 
     amt.className='form-control form-control-sm';
+    amt.style.width = '80px';
     const btnFull = document.createElement('button'); 
     btnFull.textContent='Tutto'; 
     btnFull.type='button';
     btnFull.className='btn btn-sm btn-outline-success';
     const amtGroup = document.createElement('div');
     amtGroup.className = 'amount-input-group';
-    amtGroup.appendChild(r3);
     amtGroup.appendChild(amt);
     amtGroup.appendChild(btnFull);
-    const opt3 = document.createElement('div');
-    opt3.className = 'status-option';
-    opt3.appendChild(amtGroup);
 
     const setState = (type, amount)=>{ 
       CURRENT.statuses[id] = (type==='none') ? undefined
@@ -591,16 +854,15 @@ function renderGrid(){
     btnFull.onclick = ()=> { amt.value = Math.round(due); r3.checked=true; setState('paid', due); };
 
     rowDiv.appendChild(nameDiv);
-    rowDiv.appendChild(opt1);
-    rowDiv.appendChild(opt2);
-    rowDiv.appendChild(opt3);
+    rowDiv.appendChild(switchDiv);
+    rowDiv.appendChild(amtGroup);
     grid.appendChild(rowDiv);
   });
 }
 
-function addNewCollection() {
+async function addNewCollection() {
   DB.collections = DB.collections || [];
-  const nid = prompt('ID nuova colletta (es: gita-museo-ott-2025):');
+  const nid = await promptInput('ID nuova colletta (es: gita-museo-ott-2025):');
   if(!nid) {
     // Reset select to current collection
     if (CURRENT) {
@@ -609,10 +871,20 @@ function addNewCollection() {
     }
     return;
   }
-  const title = prompt('Titolo da mostrare (es: Gita al museo – Ottobre 2025):', nid.replace(/-/g,' ').replace(/\b\w/g,m=>m.toUpperCase()));
-  const due = parseFloat(prompt('Quota attesa (€):','10')||'0')||0;
+  const title = await promptInput('Titolo da mostrare (es: Gita al museo – Ottobre 2025):', 
+                                   nid.replace(/-/g,' ').replace(/\b\w/g,m=>m.toUpperCase()));
+  if (!title) {
+    if (CURRENT) {
+      const idx = DB.collections.indexOf(CURRENT);
+      byId('selColl').value = idx >= 0 ? idx : '0';
+    }
+    return;
+  }
+  const dueStr = await promptInput('Quota attesa (€):','10');
+  const due = parseFloat(dueStr||'0')||0;
   DB.collections.unshift({ id:nid, title, amount_due: due, archived:false, archived_at:null, statuses:{} });
   renderDB();
+  showToast('Nuova colletta creata: ' + title, 'success');
 }
 
 byId('allNP').onclick = ()=>{ readRoster(); ensureStatuses(); DB.roster.forEach(n=>{ delete CURRENT.statuses[slug(n)]; }); renderGrid(); };
@@ -664,9 +936,20 @@ byId('stickySave').onclick = saveState;
 
 ['collTitle','collId','collDue','collArchived'].forEach(id=> byId(id)?.addEventListener('input', ()=> { syncHeaderToCurrent(); updateSavebarTitle(); }));
 
+function isLocalEnvironment() {
+  return window.location.protocol === 'file:' || 
+         window.location.hostname === 'localhost' || 
+         window.location.hostname === '127.0.0.1';
+}
+
 function tokenPresent() {
   const t = (LS.get().token || '').trim();
   return t.length > 0;
+}
+
+function canLoadState() {
+  // In locale, non serve il token. Su GitHub Pages, serve il token.
+  return isLocalEnvironment() || tokenPresent();
 }
 
 function updateCfgCollapse() {
@@ -675,19 +958,24 @@ function updateCfgCollapse() {
   const body = byId('cfgBody');
   if (!card) return;
   
-  if (tokenPresent()) {
+  if (canLoadState()) {
     card.classList.add('collapsed-section');
     if (body) body.style.display = 'none';
     if (status) {
-      status.textContent = 'Token presente ✓';
-      status.className = 'status-badge badge bg-success';
+      if (isLocalEnvironment()) {
+        status.textContent = 'Locale (no token) ✓';
+        status.className = 'status-badge badge bg-info';
+      } else {
+        status.textContent = 'Token presente ✓';
+        status.className = 'status-badge badge bg-success';
+      }
     }
   } else {
     card.classList.remove('collapsed-section');
     if (body) body.style.display = 'block';
     if (status) {
-      status.textContent = 'Nessun token';
-      status.className = 'status-badge badge bg-secondary';
+      status.textContent = 'Token necessario';
+      status.className = 'status-badge badge bg-warning';
     }
   }
 }
@@ -697,7 +985,7 @@ function updateStateCollapse() {
   const body = byId('stateBody');
   if (!card) return;
   
-  if (tokenPresent() && DB) {
+  if (canLoadState() && DB) {
     card.classList.add('collapsed-section');
     if (body) body.style.display = 'none';
   } else {
@@ -750,7 +1038,7 @@ function autoLoadState() {
   if (!byId('owner').value) byId('owner').value = cfg.owner || DEFAULT_OWNER;
   if (!byId('repo').value)  byId('repo').value  = cfg.repo  || DEFAULT_REPO;
 
-  if (tokenPresent() && byId('load')) {
+  if (canLoadState() && byId('load')) {
     byId('load').click();
   }
 }
