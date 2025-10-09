@@ -29,7 +29,7 @@
     {
       "id": "girogirolibro-quadernone",
       "title": "Giro giro libro (12€ o 10€) + quadernone (15€)",
-      "amount_due": 27,
+      "amount_due": 25,
       "statuses": {
         "ginevra": {
           "type": "partial",
@@ -56,5 +56,5 @@
       "archived_at": null
     }
   ],
-  "updated": "2025-10-09T12:00:55.063Z"
+  "updated": "2025-10-09T12:02:37.850Z"
 }
