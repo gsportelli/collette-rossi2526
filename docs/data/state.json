@@ -11,6 +11,9 @@
       "id": "regalo-natale-2025",
       "title": "Regalo di Natale 2025",
       "amount_due": 10.00,
+      "statuses": {},
+      "archived": false,           // ← nuovo
+      "archived_at": null,         // ← opzionale
       "statuses": {}
     }
   ],
