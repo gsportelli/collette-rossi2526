@@ -346,7 +346,7 @@ body {
       </div>
       <small class="text-muted d-block mb-3">ID stabile (niente spazi), usato come chiave.</small>
 
-      <div class="d-flex gap-2 mb-3 flex-wrap">
+      <!-- <div class="d-flex gap-2 mb-3 flex-wrap">
         <span class="text-muted">Imposta rapidamente:</span>
         <button id="allNP" class="btn btn-sm btn-outline-secondary">
           <i class="fas fa-times-circle me-1"></i>Tutti "non pagato"
@@ -357,7 +357,7 @@ body {
         <button id="allFULL" class="btn btn-sm btn-outline-success">
           <i class="fas fa-check-circle me-1"></i>Tutti "quota piena"
         </button>
-      </div>
+      </div> -->
 
       <hr>
 
@@ -1243,15 +1243,15 @@ async function addNewCollection() {
   showToast('Nuova colletta creata: ' + title, 'success');
 }
 
-byId('allNP').onclick = ()=>{ readRoster(); ensureStatuses(); DB.roster.forEach(n=>{ delete CURRENT.statuses[slug(n)]; }); renderGrid(); };
-byId('allOUT').onclick = ()=>{ readRoster(); ensureStatuses(); DB.roster.forEach(n=>{ CURRENT.statuses[slug(n)]={type:'out'}; }); renderGrid(); };
-byId('allFULL').onclick = ()=>{ 
-  readRoster(); 
-  ensureStatuses(); 
-  const due=parseFloat(byId('collDue').value||'0')||0;
-  DB.roster.forEach(n=>{ CURRENT.statuses[slug(n)]={type:'paid', amount: due}; }); 
-  renderGrid(); 
-};
+// byId('allNP').onclick = ()=>{ readRoster(); ensureStatuses(); DB.roster.forEach(n=>{ delete CURRENT.statuses[slug(n)]; }); renderGrid(); };
+// byId('allOUT').onclick = ()=>{ readRoster(); ensureStatuses(); DB.roster.forEach(n=>{ CURRENT.statuses[slug(n)]={type:'out'}; }); renderGrid(); };
+// byId('allFULL').onclick = ()=>{ 
+//   readRoster(); 
+//   ensureStatuses(); 
+//   const due=parseFloat(byId('collDue').value||'0')||0;
+//   DB.roster.forEach(n=>{ CURRENT.statuses[slug(n)]={type:'paid', amount: due}; }); 
+//   renderGrid(); 
+// };
 
 function syncHeaderToCurrent(){
   CURRENT.title = byId('collTitle').value.trim() || CURRENT.id;
