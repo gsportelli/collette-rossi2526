@@ -482,24 +482,29 @@ function confirmAction(message) {
   });
 }
 
-function promptInput(message, defaultValue = '') {
+function promptInput(message, defaultValue = '', placeholder = '') {
   return new Promise((resolve) => {
     const modalId = 'promptModal-' + Date.now();
     const modalHTML = `
       <div class="modal fade" id="${modalId}" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Input</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Input richiesto</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-              <label class="form-label">${message}</label>
-              <input type="text" class="form-control" id="${modalId}-input" value="${defaultValue}">
+              <label class="form-label fw-bold">${message}</label>
+              <input type="text" class="form-control form-control-lg" id="${modalId}-input" value="${defaultValue}" placeholder="${placeholder}">
+              ${placeholder ? '<small class="form-text text-muted mt-2 d-block">' + placeholder + '</small>' : ''}
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-              <button type="button" class="btn btn-primary" id="${modalId}-confirm">OK</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <i class="fas fa-times me-1"></i>Annulla
+              </button>
+              <button type="button" class="btn btn-primary" id="${modalId}-confirm">
+                <i class="fas fa-check me-1"></i>OK
+              </button>
             </div>
           </div>
         </div>
@@ -671,13 +676,7 @@ async function ghPut(path, message, base64Content, sha){
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    const alertDiv = document.createElement('div');
-    alertDiv.className = 'alert alert-warning alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
-    alertDiv.style.zIndex = '9999';
-    alertDiv.style.maxWidth = '500px';
-    alertDiv.innerHTML = '<i class="fas fa-download me-2"></i>File scaricato! Sostituisci <code>' + path + '</code> con il file scaricato e ricarica la pagina.<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
-    document.body.appendChild(alertDiv);
-    setTimeout(() => alertDiv.remove(), 8000);
+    showToast('File scaricato! Sostituisci ' + path + ' con il file scaricato e ricarica la pagina.', 'warning');
     
     return {
       content: { sha: 'local-' + Date.now() }
@@ -720,14 +719,21 @@ function renderDB(){
   const card = byId('collectionsCard');
   const sel  = byId('selColl');
   sel.innerHTML='<option value="__new__">+ Nuova colletta</option>';
-  (DB.collections||[]).slice()
-    .sort((a,b)=> (a.archived===b.archived?0:(a.archived?1:-1)) || (a.title||a.id).localeCompare(b.title||b.id))
-    .forEach((c,i)=>{    
+  
+  // Create a map to preserve original indices
+  const sortedWithIndex = (DB.collections||[]).map((c, originalIndex) => ({collection: c, originalIndex}))
+    .sort((a,b)=> {
+      const ca = a.collection, cb = b.collection;
+      return (ca.archived===cb.archived?0:(ca.archived?1:-1)) || (ca.title||ca.id).localeCompare(cb.title||cb.id);
+    });
+  
+  sortedWithIndex.forEach(({collection: c, originalIndex})=>{    
     const opt=document.createElement('option');
-    opt.value=i;
+    opt.value=originalIndex;  // Use original index, not sorted position
     opt.textContent=(c.title||c.id) + (c.archived ? ' 📦' : '');
     sel.appendChild(opt);
   });
+  
   card.hidden = !DB.collections || DB.collections.length===0;
   sel.onchange = ()=>{ 
     if (sel.value === '__new__') {
@@ -862,7 +868,7 @@ function renderGrid(){
 
 async function addNewCollection() {
   DB.collections = DB.collections || [];
-  const nid = await promptInput('ID nuova colletta (es: gita-museo-ott-2025):');
+  const nid = await promptInput('ID della nuova colletta:', '', 'es: gita-museo-ott-2025');
   if(!nid) {
     // Reset select to current collection
     if (CURRENT) {
@@ -871,8 +877,9 @@ async function addNewCollection() {
     }
     return;
   }
-  const title = await promptInput('Titolo da mostrare (es: Gita al museo – Ottobre 2025):', 
-                                   nid.replace(/-/g,' ').replace(/\b\w/g,m=>m.toUpperCase()));
+  const title = await promptInput('Titolo da mostrare:', 
+                                   nid.replace(/-/g,' ').replace(/\b\w/g,m=>m.toUpperCase()),
+                                   'es: Gita al museo – Ottobre 2025');
   if (!title) {
     if (CURRENT) {
       const idx = DB.collections.indexOf(CURRENT);
@@ -880,7 +887,7 @@ async function addNewCollection() {
     }
     return;
   }
-  const dueStr = await promptInput('Quota attesa (€):','10');
+  const dueStr = await promptInput('Quota attesa in euro:','10', 'Inserisci solo il numero, senza il simbolo €');
   const due = parseFloat(dueStr||'0')||0;
   DB.collections.unshift({ id:nid, title, amount_due: due, archived:false, archived_at:null, statuses:{} });
   renderDB();
@@ -919,15 +926,9 @@ async function saveState() {
     const content = b64encodeUtf8(JSON.stringify(DB, null, 2));
     const res = await ghPut('docs/data/state.json', 'admin update '+(CURRENT.id||''), content, SHA);
     SHA = res.content.sha;
-    
-    const alertDiv = document.createElement('div');
-    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
-    alertDiv.style.zIndex = '9999';
-    alertDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>Salvato con successo ✓<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
-    document.body.appendChild(alertDiv);
-    setTimeout(() => alertDiv.remove(), 3000);
+    showToast('Modifiche salvate con successo!', 'success');
   }catch(e){ 
-    alert('Errore nel salvataggio: '+e.message); 
+    showToast('Errore nel salvataggio: ' + e.message, 'error');
   }
 }
 
