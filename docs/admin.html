@@ -81,10 +81,43 @@
 </div>
 
 <script>
+// --- UTF-8 safe base64 (Unicode-friendly) ---
+function b64encodeUtf8(str) {
+  if (window.TextEncoder) {
+    const bytes = new TextEncoder().encode(str);
+    let bin = "";
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+  // fallback
+  return btoa(unescape(encodeURIComponent(str)));
+}
+function b64decodeUtf8(b64) {
+  const bin = atob(b64);
+  if (window.TextDecoder) {
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+  // fallback
+  return decodeURIComponent(escape(bin));
+}
+
+  
 // --- helpers ---
 const EURO = n => (n ?? 0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'€';
-const slug = s => s.normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase()
-                 .replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+
+// Rimuove diacritici in modo cross-browser
+const stripDiacritics = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+// Feature-detect per Unicode property escapes
+const _supportsUnicodeProps = (() => { try { new RegExp('\\p{L}', 'u'); return true; } catch { return false; } })();
+
+const slug = (s) => {
+  const noMarks = stripDiacritics(String(s));
+  const re = _supportsUnicodeProps ? /[^\p{Letter}\p{Number}]+/gu : /[^a-z0-9]+/g;
+  return noMarks.toLowerCase().replace(re, '-').replace(/(^-|-$)/g, '');
+};
+  
 const qs = s => document.querySelector(s);
 const byId = id => document.getElementById(id);
 
@@ -179,7 +212,7 @@ if (byId('load')) {
     try{
       const j = await ghGet('docs/data/state.json');
       SHA = j.sha;
-      DB = JSON.parse(atob(j.content));
+      DB = JSON.parse(b64decodeUtf8(j.content));
       renderDB();
       alert('Stato caricato.');
     }catch(e){ alert('Errore nel caricamento: '+e.message); }
@@ -303,7 +336,7 @@ if (byId('save')) {
       if(!Array.isArray(DB.collections) || DB.collections.length===0) throw new Error('Nessuna colletta presente.');
       syncHeaderToCurrent();
       DB.updated = new Date().toISOString();
-      const content = btoa(unescape(encodeURIComponent(JSON.stringify(DB, null, 2))));
+      const content = b64encodeUtf8(JSON.stringify(DB, null, 2));
       const res = await ghPut('docs/data/state.json', 'admin update '+(CURRENT.id||''), content, SHA);
       SHA = res.content.sha;
       alert('Salvato ✓');
