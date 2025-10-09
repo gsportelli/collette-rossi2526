@@ -64,6 +64,7 @@
     <div><label>Titolo</label><input id="collTitle" type="text"></div>
     <div><label>ID</label><input id="collId" type="text" placeholder="es: regalo-natale-2025"></div>
     <div><label>Quota attesa (€)</label><input id="collDue" type="number" step="0.01" min="0"></div>
+    <div><label> </label><label class="small"><input id="collArchived" type="checkbox">Archiviata</label></div>
   </div>
   <div class="small muted">ID stabile (niente spazi), usato come chiave.</div>
 
@@ -141,8 +142,13 @@ function renderDB(){
   const card = byId('collectionsCard');
   const sel  = byId('selColl');
   sel.innerHTML='';
-  (DB.collections||[]).forEach((c,i)=>{
-    const opt=document.createElement('option'); opt.value=i; opt.textContent=c.title||c.id; sel.appendChild(opt);
+  (DB.collections||[]).slice()
+    .sort((a,b)=> (a.archived===b.archived?0:(a.archived?1:-1)) || (a.title||a.id).localeCompare(b.title||b.id))
+    .forEach((c,i)=>{    
+    const opt=document.createElement('option');
+    opt.value=i;
+    opt.textContent=(c.title||c.id) + (c.archived ? ' (archiviata)' : '');
+    sel.appendChild(opt);
   });
   card.hidden = !DB.collections || DB.collections.length===0;
   sel.onchange = ()=>{ CURRENT = DB.collections[+sel.value]; fillCollForm(); renderGrid(); };
@@ -153,6 +159,7 @@ function fillCollForm(){
   byId('collTitle').value = CURRENT.title||'';
   byId('collId').value    = CURRENT.id||'';
   byId('collDue').value   = (CURRENT.amount_due ?? 0);
+  byId('collArchived').checked = !!CURRENT.archived;
 }
 
 function readRoster(){
@@ -216,7 +223,8 @@ byId('addColl').onclick = ()=>{
   if(!nid) return;
   const title = prompt('Titolo da mostrare (es: Gita al museo – Ottobre 2025):', nid.replace(/-/g,' ').replace(/\b\w/g,m=>m.toUpperCase()));
   const due = parseFloat(prompt('Quota attesa (€):','10.00')||'0')||0;
-  DB.collections.unshift({ id:nid, title, amount_due: due, statuses:{} });
+  DB.collections.unshift({ id:nid, title, amount_due: due, archived:false, archived_at:null, statuses:{} });
+
   renderDB();
 };
 
@@ -229,6 +237,13 @@ function syncHeaderToCurrent(){
   CURRENT.title = byId('collTitle').value.trim() || CURRENT.id;
   CURRENT.id    = byId('collId').value.trim()    || CURRENT.id;
   CURRENT.amount_due = parseFloat(byId('collDue').value||'0')||0;
+  const wasArchived = !!CURRENT.archived;
+  CURRENT.archived  = byId('collArchived').checked;
+  if (CURRENT.archived && !wasArchived && !CURRENT.archived_at) {
+    CURRENT.archived_at = new Date().toISOString();
+  } else if (!CURRENT.archived) {
+    CURRENT.archived_at = null;
+  }
 }
 
 byId('save').onclick = async ()=>{
@@ -245,7 +260,8 @@ byId('save').onclick = async ()=>{
 };
 
 // Aggiorna header se l’utente modifica i campi
-['collTitle','collId','collDue'].forEach(id=> byId(id).addEventListener('input', ()=> syncHeaderToCurrent()));
+['collTitle','collId','collDue','collArchived'].forEach(id=> byId(id).addEventListener('input', ()=> syncHeaderToCurrent()));
+
 </script>
 </body>
 </html>
