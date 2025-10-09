@@ -31,10 +31,6 @@
       "title": "Giro giro libro (12€ o 10€) + quadernone (15€)",
       "amount_due": 27,
       "statuses": {
-        "alessia-b": {
-          "type": "paid",
-          "amount": 10
-        },
         "achille": {
           "type": "paid",
           "amount": 27
