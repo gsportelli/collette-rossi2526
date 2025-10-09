@@ -1,7 +1,7 @@
 {
   "name": "Collette Admin",
   "short_name": "Collette Admin",
-  "start_url": "./admin.html",
+  "start_url": "/collette-rossi2526/admin.html",
   "scope": ".",
   "display": "standalone",
   "icons": [
