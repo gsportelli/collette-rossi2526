@@ -29,23 +29,31 @@
   .muted{color:#666;}
   .pill{font-size:.85rem;background:#efefef;border-radius:999px;padding:.15rem .5rem;}
   .sep{height:1px;background:#eee;margin:.75rem 0;}
+  #cfgCard.collapsed #cfgBody { display: none; }
 </style>
 <body>
 <h1>Collette – Admin</h1>
 
-<div class="card">
-  <strong>1) Config</strong>
-  <div class="row">
-    <div><label>Owner</label><input id="owner" type="text" placeholder="tuo-username"></div>
-    <div><label>Repo</label><input id="repo" type="text" placeholder="collette" value="collette-2526"></div>
+<div class="card" id="cfgCard">
+  <div class="row" style="justify-content: space-between; align-items: center;">
+    <strong>1) Config</strong>
+    <div class="small muted" id="cfgStatus"></div>
+    <button id="toggleCfg" type="button">Mostra/Nascondi</button>
   </div>
-  <label>GitHub Fine-grained Token (repo contents RW sul solo repo)</label>
-  <input id="token" type="password" placeholder="ghp_...">
-  <div class="row" style="margin-top:.5rem">
-    <button id="saveCfg" class="primary">Salva su questo dispositivo</button>
-    <button id="clearCfg">Pulisci config</button>
+
+  <div id="cfgBody">
+    <div class="row">
+      <div><label>Owner</label><input id="owner" type="text" placeholder="tuo-username"></div>
+      <div><label>Repo</label><input id="repo" type="text" placeholder="collette-rossi2526" value="collette-rossi2526"></div>
+    </div>
+    <label>GitHub Fine-grained Token</label>
+    <input id="token" type="password" placeholder="ghp_...">
+    <div class="row" style="margin-top:.5rem">
+      <button id="saveCfg" class="primary">Salva su questo dispositivo</button>
+      <button id="clearCfg">Pulisci config</button>
+    </div>
+    <div class="small muted">Il token resta solo in questo browser (localStorage).</div>
   </div>
-  <div class="small muted">Il token resta solo in questo browser (localStorage). Non condividerlo.</div>
 </div>
 
 <div class="card">
@@ -189,18 +197,22 @@ cfg();
 if (byId('saveCfg')) {
   byId('saveCfg').addEventListener('click', () => {
     LS.set({ owner: val('owner'), repo: val('repo') || DEFAULT_REPO, token: val('token') });
+    updateCfgCollapse();
     alert('Config salvata' + (SafeStore.ok ? '' : ' (localStorage non disponibile: salvataggio temporaneo)'));
   });
 }
 if (byId('clearCfg')) {
   byId('clearCfg').addEventListener('click', () => {
     if (confirm('Rimuovere config localmente?')) { LS.clear(); cfgLoadToForm(); }
+    updateCfgCollapse();
   });
 }
 
 async function ghGet(path){ const {owner,repo,token}=LS.get();
   const url=`https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-  const r=await fetch(url,{headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'}});
+  const headers = {'Accept':'application/vnd.github+json'};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const r = await fetch(url,{headers});
   if(!r.ok) throw new Error('GET '+path+' → '+r.status);
   return r.json();
 }
@@ -352,6 +364,49 @@ if (byId('save')) {
 
 // Aggiorna header se l’utente modifica i campi
 ['collTitle','collId','collDue','collArchived'].forEach(id=> byId(id)?.addEventListener('input', ()=> syncHeaderToCurrent()));
+
+// Defaults (set your username here so first-load works)
+const DEFAULT_OWNER = 'gsportelli'; // <-- put your GitHub username
+
+function autoLoadState() {
+  // Ensure form shows defaults if empty
+  const cfg = LS.get();
+  if (!byId('owner').value) byId('owner').value = cfg.owner || DEFAULT_OWNER;
+  if (!byId('repo').value)  byId('repo').value  = cfg.repo  || DEFAULT_REPO;
+
+  // Try loading right away; if it fails, do nothing (keeps UI usable)
+  if (byId('load')) {
+    byId('load').click();
+  }
+}
+
+function tokenPresent() {
+  const t = (LS.get().token || '').trim();
+  return t.length > 0;
+}
+function updateCfgCollapse() {
+  const card = byId('cfgCard');
+  const status = byId('cfgStatus');
+  if (!card) return;
+  if (tokenPresent()) {
+    card.classList.add('collapsed');
+    if (status) status.textContent = 'Token presente ✓';
+  } else {
+    card.classList.remove('collapsed');
+    if (status) status.textContent = 'Nessun token';
+  }
+}
+if (byId('toggleCfg')) {
+  byId('toggleCfg').addEventListener('click', ()=> {
+    byId('cfgCard').classList.toggle('collapsed');
+  });
+}
+
+// Call this after loading config and after save/clear:
+cfg();
+updateCfgCollapse();  // <-- add this line
+autoLoadState();
+
 </script>
 
 
