@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="it">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Collette – Admin</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:900px;margin:1rem auto;padding:0 1rem;}
+  h1{margin:.5rem 0 1rem;}
+  .card{border:1px solid #ddd;border-radius:8px;padding:12px;margin:10px 0;}
+  label{display:block;margin:.35rem 0 .2rem;}
+  input[type="text"],input[type="password"],input[type="number"],textarea,select{
+    width:100%;padding:.5rem;border:1px solid #ccc;border-radius:6px;font-size:1rem;}
+  button{padding:.55rem .8rem;border:1px solid #bbb;border-radius:8px;background:#f7f7f7;font-size:1rem;}
+  button.primary{background:#2f81f7;border-color:#2f81f7;color:#fff;}
+  .row{display:flex;gap:.5rem;align-items:center;}
+  .row > *{flex:1;}
+  .grid{display:grid;grid-template-columns: 1fr auto auto auto; gap:.3rem .4rem; align-items:center;}
+  .name{font-size:1rem;}
+  .status{justify-self:end;}
+  .small{font-size:.9rem;color:#666;}
+  .muted{color:#666;}
+  .pill{font-size:.85rem;background:#efefef;border-radius:999px;padding:.15rem .5rem;}
+  .sep{height:1px;background:#eee;margin:.75rem 0;}
+</style>
+<body>
+<h1>Collette – Admin</h1>
+
+<div class="card">
+  <strong>1) Config</strong>
+  <div class="row">
+    <div><label>Owner</label><input id="owner" type="text" placeholder="tuo-username"></div>
+    <div><label>Repo</label><input id="repo" type="text" placeholder="collette" value="collette"></div>
+  </div>
+  <label>GitHub Fine-grained Token (repo contents RW sul solo repo)</label>
+  <input id="token" type="password" placeholder="ghp_...">
+  <div class="row" style="margin-top:.5rem">
+    <button id="saveCfg" class="primary">Salva su questo dispositivo</button>
+    <button id="clearCfg">Pulisci config</button>
+  </div>
+  <div class="small muted">Il token resta solo in questo browser (localStorage). Non condividerlo.</div>
+</div>
+
+<div class="card">
+  <strong>2) Stato e roster</strong>
+  <div class="row">
+    <button id="load">Carica stato</button>
+    <button id="save" class="primary">Salva modifiche</button>
+  </div>
+  <div class="small muted">File: <code>docs/data/state.json</code></div>
+  <div class="sep"></div>
+  <label>Roster (un nome per riga – usa “Nome + iniziale cognome”)</label>
+  <textarea id="roster" rows="6"></textarea>
+</div>
+
+<div class="card" id="collectionsCard" hidden>
+  <strong>3) Collette</strong>
+  <div class="row">
+    <select id="selColl"></select>
+    <button id="addColl">+ Nuova colletta</button>
+  </div>
+  <div class="row">
+    <div><label>Titolo</label><input id="collTitle" type="text"></div>
+    <div><label>ID</label><input id="collId" type="text" placeholder="es: regalo-natale-2025"></div>
+    <div><label>Quota attesa (€)</label><input id="collDue" type="number" step="0.01" min="0"></div>
+  </div>
+  <div class="small muted">ID stabile (niente spazi), usato come chiave.</div>
+
+  <div class="sep"></div>
+  <div class="row">
+    <div class="muted">Imposta rapidamente:</div>
+    <button id="allNP">Tutti “non pagato”</button>
+    <button id="allOUT">Tutti “non partecipa”</button>
+    <button id="allFULL">Tutti “quota piena”</button>
+  </div>
+
+  <div class="sep"></div>
+  <div id="grid" class="grid"></div>
+</div>
+
+<script>
+// --- helpers ---
+const EURO = n => (n ?? 0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'€';
+const slug = s => s.normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase()
+                 .replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+const qs = s => document.querySelector(s);
+const byId = id => document.getElementById(id);
+const LS = {
+  get(){ return {
+    owner: localStorage.getItem('col_owner')||'',
+    repo:  localStorage.getItem('col_repo')||'collette',
+    token: localStorage.getItem('col_token')||'',
+  }},
+  set(o){ localStorage.setItem('col_owner',o.owner||'');
+          localStorage.setItem('col_repo', o.repo ||'collette');
+          if(o.token!==undefined) localStorage.setItem('col_token',o.token||''); },
+  clear(){ localStorage.removeItem('col_owner'); localStorage.removeItem('col_repo'); localStorage.removeItem('col_token'); }
+};
+
+// --- state in memoria ---
+let SHA = null; // sha del file su GitHub (serve per il PUT)
+let DB = null;  // oggetto state.json corrente
+let CURRENT = null; // colletta selezionata
+
+function cfg(){ const c=LS.get(); byId('owner').value=c.owner; byId('repo').value=c.repo; byId('token').value=c.token; }
+cfg();
+
+byId('saveCfg').onclick = ()=>{ LS.set({owner:byId('owner').value.trim(), repo:byId('repo').value.trim(), token:byId('token').value.trim()}); alert('Config salvata.'); };
+byId('clearCfg').onclick = ()=>{ if(confirm('Rimuovere config localmente?')){ LS.clear(); cfg(); } };
+
+async function ghGet(path){ const {owner,repo,token}=LS.get();
+  const url=`https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  const r=await fetch(url,{headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'}});
+  if(!r.ok) throw new Error('GET '+path+' → '+r.status);
+  return r.json();
+}
+async function ghPut(path, message, base64Content, sha){
+  const {owner,repo,token}=LS.get();
+  const url=`https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  const body={ message, content: base64Content, sha };
+  const r=await fetch(url,{method:'PUT', headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'}, body: JSON.stringify(body)});
+  if(!r.ok) throw new Error('PUT '+path+' → '+r.status);
+  return r.json();
+}
+
+byId('load').onclick = async ()=>{
+  try{
+    const j = await ghGet('docs/data/state.json');
+    SHA = j.sha;
+    DB = JSON.parse(atob(j.content));
+    renderDB();
+    alert('Stato caricato.');
+  }catch(e){ alert('Errore nel caricamento: '+e.message); }
+};
+
+function renderDB(){
+  // roster
+  byId('roster').value = (DB.roster||[]).join('\n');
+  // collections
+  const card = byId('collectionsCard');
+  const sel  = byId('selColl');
+  sel.innerHTML='';
+  (DB.collections||[]).forEach((c,i)=>{
+    const opt=document.createElement('option'); opt.value=i; opt.textContent=c.title||c.id; sel.appendChild(opt);
+  });
+  card.hidden = !DB.collections || DB.collections.length===0;
+  sel.onchange = ()=>{ CURRENT = DB.collections[+sel.value]; fillCollForm(); renderGrid(); };
+  if(DB.collections && DB.collections.length){ sel.value = '0'; CURRENT = DB.collections[0]; fillCollForm(); renderGrid(); }
+}
+
+function fillCollForm(){
+  byId('collTitle').value = CURRENT.title||'';
+  byId('collId').value    = CURRENT.id||'';
+  byId('collDue').value   = (CURRENT.amount_due ?? 0);
+}
+
+function readRoster(){
+  const rows = byId('roster').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  DB.roster = Array.from(new Set(rows)); // deduplica
+}
+
+function ensureStatuses(){
+  CURRENT.statuses = CURRENT.statuses || {};
+}
+
+function renderGrid(){
+  readRoster(); ensureStatuses();
+  const grid = byId('grid'); grid.innerHTML='';
+  const due = parseFloat(byId('collDue').value||'0') || 0;
+  const rosterSorted = DB.roster.slice().sort((a,b)=>a.localeCompare(b));
+
+  rosterSorted.forEach(name=>{
+    const id = slug(name);
+    const st = CURRENT.statuses[id];
+
+    const rowName = document.createElement('div'); rowName.className='name'; rowName.textContent = name;
+
+    const r1 = document.createElement('input'); r1.type='radio'; r1.name='r-'+id; r1.title='non pagato';
+    const l1 = document.createElement('label'); l1.className='small'; l1.textContent='non pagato';
+    const r2 = document.createElement('input'); r2.type='radio'; r2.name='r-'+id; r2.title='non partecipa';
+    const l2 = document.createElement('label'); l2.className='small'; l2.textContent='non partecipa';
+    const r3 = document.createElement('input'); r3.type='radio'; r3.name='r-'+id; r3.title='ha versato';
+    const amt = document.createElement('input'); amt.type='number'; amt.step='0.01'; amt.min='0'; amt.style.width='7ch';
+    const btnFull = document.createElement('button'); btnFull.textContent='tutto'; btnFull.type='button';
+
+    const setState = (type, amount)=>{ CURRENT.statuses[id] = (type==='none') ? undefined
+                                                : (type==='out') ? {type:'out'}
+                                                : {type:(amount>=due? 'paid':'partial'), amount: amount}; };
+
+    // init UI from state
+    if(!st){ r1.checked=true; }
+    else if(st.type==='out'){ r2.checked=true; }
+    else { r3.checked=true; amt.value = (st.amount ?? 0); }
+
+    // handlers
+    r1.onchange = ()=> setState('none');
+    r2.onchange = ()=> setState('out');
+    r3.onchange = ()=> setState('paid', parseFloat(amt.value||'0')||0);
+    amt.oninput = ()=> { r3.checked=true; setState('paid', parseFloat(amt.value||'0')||0); };
+    btnFull.onclick = ()=> { amt.value = due.toFixed(2); r3.checked=true; setState('paid', due); };
+
+    const cell1 = document.createElement('div'); cell1.className='status'; cell1.appendChild(r1); cell1.appendChild(l1);
+    const cell2 = document.createElement('div'); cell2.className='status'; cell2.appendChild(r2); cell2.appendChild(l2);
+    const cell3 = document.createElement('div'); cell3.className='status';
+    const wrap = document.createElement('div'); wrap.className='row'; wrap.style.justifyContent='flex-end';
+    wrap.appendChild(r3); wrap.appendChild(amt); wrap.appendChild(btnFull); cell3.appendChild(wrap);
+
+    grid.appendChild(rowName); grid.appendChild(cell1); grid.appendChild(cell2); grid.appendChild(cell3);
+  });
+}
+
+byId('addColl').onclick = ()=>{
+  DB.collections = DB.collections || [];
+  const nid = prompt('ID nuova colletta (es: gita-museo-ott-2025):');
+  if(!nid) return;
+  const title = prompt('Titolo da mostrare (es: Gita al museo – Ottobre 2025):', nid.replace(/-/g,' ').replace(/\b\w/g,m=>m.toUpperCase()));
+  const due = parseFloat(prompt('Quota attesa (€):','10.00')||'0')||0;
+  DB.collections.unshift({ id:nid, title, amount_due: due, statuses:{} });
+  renderDB();
+};
+
+byId('allNP').onclick   = ()=>{ readRoster(); ensureStatuses(); DB.roster.forEach(n=>{ delete CURRENT.statuses[slug(n)]; }); renderGrid(); };
+byId('allOUT').onclick  = ()=>{ readRoster(); ensureStatuses(); DB.roster.forEach(n=>{ CURRENT.statuses[slug(n)]={type:'out'}; }); renderGrid(); };
+byId('allFULL').onclick = ()=>{ readRoster(); ensureStatuses(); const due=parseFloat(byId('collDue').value||'0')||0;
+                                DB.roster.forEach(n=>{ CURRENT.statuses[slug(n)]={type:'paid', amount: due}; }); renderGrid(); };
+
+function syncHeaderToCurrent(){
+  CURRENT.title = byId('collTitle').value.trim() || CURRENT.id;
+  CURRENT.id    = byId('collId').value.trim()    || CURRENT.id;
+  CURRENT.amount_due = parseFloat(byId('collDue').value||'0')||0;
+}
+
+byId('save').onclick = async ()=>{
+  try{
+    readRoster();
+    if(!Array.isArray(DB.collections) || DB.collections.length===0) throw new Error('Nessuna colletta presente.');
+    syncHeaderToCurrent();
+    DB.updated = new Date().toISOString();
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(DB, null, 2))));
+    const res = await ghPut('docs/data/state.json', 'admin update '+(CURRENT.id||''), content, SHA);
+    SHA = res.content.sha;
+    alert('Salvato ✓');
+  }catch(e){ alert('Errore nel salvataggio: '+e.message); }
+};
+
+// Aggiorna header se l’utente modifica i campi
+['collTitle','collId','collDue'].forEach(id=> byId(id).addEventListener('input', ()=> syncHeaderToCurrent()));
+</script>
+</body>
+</html>
