@@ -34,11 +34,15 @@
         "achille": {
           "type": "paid",
           "amount": 27
+        },
+        "amelie": {
+          "type": "paid",
+          "amount": 27
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-09T10:02:44.835Z"
+  "updated": "2025-10-09T10:03:57.832Z"
 }
