@@ -42,11 +42,15 @@
         "laura": {
           "type": "partial",
           "amount": 25
+        },
+        "francesco-b": {
+          "type": "paid",
+          "amount": 27
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-09T11:05:57.929Z"
+  "updated": "2025-10-09T11:16:32.832Z"
 }
