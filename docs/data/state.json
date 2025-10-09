@@ -1,1 +1,18 @@
 
+
+{
+  "roster": [
+    "Alessia B.", "Andrea C.", "Aurora L.", "Chiara B.", "Diego R.",
+    "Emma V.", "Filippo D.", "Gabriele P.", "Giulia T.", "Luca S.",
+    "Marco N.", "Marta C.", "Matteo F.", "Nicolò R.", "Sara M."
+  ],
+  "collections": [
+    {
+      "id": "regalo-natale-2025",
+      "title": "Regalo di Natale 2025",
+      "amount_due": 10.00,
+      "statuses": {}
+    }
+  ],
+  "updated": "1970-01-01T00:00:00Z"
+}
