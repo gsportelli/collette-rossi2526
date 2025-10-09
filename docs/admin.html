@@ -87,16 +87,47 @@ const slug = s => s.normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase()
                  .replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
 const qs = s => document.querySelector(s);
 const byId = id => document.getElementById(id);
+
+// === blocco robusto per config owner/repo/token ===
+// fallback se localStorage non è utilizzabile (es. Safari privato)
+function storageUsable() {
+  try {
+    const k = '__probe__' + Math.random().toString(36).slice(2);
+    localStorage.setItem(k, '1'); localStorage.removeItem(k);
+    return true;
+  } catch (_) { return false; }
+}
+const SafeStore = (() => {
+  const ok = typeof window !== 'undefined' && 'localStorage' in window && storageUsable();
+  const mem = {};
+  return {
+    ok,
+    getItem: k => { try { return ok ? localStorage.getItem(k) : (k in mem ? mem[k] : null); } catch (_) { return k in mem ? mem[k] : null; } },
+    setItem: (k, v) => { const s = (v ?? '').toString(); try { ok ? localStorage.setItem(k, s) : (mem[k] = s); } catch (_) { mem[k] = s; } },
+    removeItem: k => { try { ok ? localStorage.removeItem(k) : delete mem[k]; } catch (_) { delete mem[k]; } },
+  };
+})();
+const val = id => (byId(id)?.value ?? '').toString();
+const DEFAULT_REPO = 'collette-rossi2526';
+
 const LS = {
-  get(){ return {
-    owner: localStorage.getItem('col_owner')||'',
-    repo:  localStorage.getItem('col_repo')||'collette-rossi2526',
-    token: localStorage.getItem('col_token')||'',
-  }},
-  set(o){ localStorage.setItem('col_owner',o.owner||'');
-          localStorage.setItem('col_repo', o.repo ||'collette-rossi2526').trim();
-          if(o.token!==undefined) localStorage.setItem('col_token',o.token||''); },
-  clear(){ localStorage.removeItem('col_owner'); localStorage.removeItem('col_repo'); localStorage.removeItem('col_token'); }
+  get(){ 
+    return {
+      owner: SafeStore.getItem('col_owner') || '',
+      repo:  SafeStore.getItem('col_repo')  || DEFAULT_REPO,
+      token: SafeStore.getItem('col_token') || '',
+    };
+  },
+  set(o = {}){
+    if ('owner' in o) SafeStore.setItem('col_owner', (o.owner ?? '').toString().trim());
+    if ('repo'  in o) {
+      let r = (o.repo ?? DEFAULT_REPO).toString().trim();
+      if (!r) r = DEFAULT_REPO;
+      SafeStore.setItem('col_repo', r);
+    }
+    if ('token' in o) SafeStore.setItem('col_token', (o.token ?? '').toString().trim());
+  },
+  clear(){ ['col_owner','col_repo','col_token'].forEach(k => SafeStore.removeItem(k)); }
 };
 
 // --- state in memoria ---
@@ -104,11 +135,29 @@ let SHA = null; // sha del file su GitHub (serve per il PUT)
 let DB = null;  // oggetto state.json corrente
 let CURRENT = null; // colletta selezionata
 
-function cfg(){ const c=LS.get(); byId('owner').value=c.owner; byId('repo').value=c.repo; byId('token').value=c.token; }
+// inizializza i campi form da LS
+function cfgLoadToForm(){
+  const c = LS.get();
+  if (byId('owner')) byId('owner').value = c.owner;
+  if (byId('repo'))  byId('repo').value  = c.repo || DEFAULT_REPO;
+  if (byId('token')) byId('token').value = c.token;
+}
+// compat: chiama come prima
+function cfg(){ cfgLoadToForm(); }
 cfg();
 
-byId('saveCfg').onclick = ()=>{ LS.set({owner:byId('owner').value.trim(), repo:byId('repo').value.trim(), token:byId('token').value.trim()}); alert('Config salvata.'); };
-byId('clearCfg').onclick = ()=>{ if(confirm('Rimuovere config localmente?')){ LS.clear(); cfg(); } };
+// handler bottoni (difensivi)
+if (byId('saveCfg')) {
+  byId('saveCfg').addEventListener('click', () => {
+    LS.set({ owner: val('owner'), repo: val('repo') || DEFAULT_REPO, token: val('token') });
+    alert('Config salvata' + (SafeStore.ok ? '' : ' (localStorage non disponibile: salvataggio temporaneo)'));
+  });
+}
+if (byId('clearCfg')) {
+  byId('clearCfg').addEventListener('click', () => {
+    if (confirm('Rimuovere config localmente?')) { LS.clear(); cfgLoadToForm(); }
+  });
+}
 
 async function ghGet(path){ const {owner,repo,token}=LS.get();
   const url=`https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
@@ -125,19 +174,21 @@ async function ghPut(path, message, base64Content, sha){
   return r.json();
 }
 
-byId('load').onclick = async ()=>{
-  try{
-    const j = await ghGet('docs/data/state.json');
-    SHA = j.sha;
-    DB = JSON.parse(atob(j.content));
-    renderDB();
-    alert('Stato caricato.');
-  }catch(e){ alert('Errore nel caricamento: '+e.message); }
-};
+if (byId('load')) {
+  byId('load').onclick = async ()=>{
+    try{
+      const j = await ghGet('docs/data/state.json');
+      SHA = j.sha;
+      DB = JSON.parse(atob(j.content));
+      renderDB();
+      alert('Stato caricato.');
+    }catch(e){ alert('Errore nel caricamento: '+e.message); }
+  };
+}
 
 function renderDB(){
   // roster
-  byId('roster').value = (DB.roster||[]).join('\n');
+  if (byId('roster')) byId('roster').value = (DB.roster||[]).join('\n');
   // collections
   const card = byId('collectionsCard');
   const sel  = byId('selColl');
@@ -163,13 +214,10 @@ function fillCollForm(){
 }
 
 function readRoster(){
-  const rows = byId('roster').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const rows = (byId('roster')?.value || '').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
   DB.roster = Array.from(new Set(rows)); // deduplica
 }
-
-function ensureStatuses(){
-  CURRENT.statuses = CURRENT.statuses || {};
-}
+function ensureStatuses(){ CURRENT.statuses = CURRENT.statuses || {}; }
 
 function renderGrid(){
   readRoster(); ensureStatuses();
@@ -217,20 +265,22 @@ function renderGrid(){
   });
 }
 
-byId('addColl').onclick = ()=>{
-  DB.collections = DB.collections || [];
-  const nid = prompt('ID nuova colletta (es: gita-museo-ott-2025):');
-  if(!nid) return;
-  const title = prompt('Titolo da mostrare (es: Gita al museo – Ottobre 2025):', nid.replace(/-/g,' ').replace(/\b\w/g,m=>m.toUpperCase()));
-  const due = parseFloat(prompt('Quota attesa (€):','10.00')||'0')||0;
-  DB.collections.unshift({ id:nid, title, amount_due: due, archived:false, archived_at:null, statuses:{} });
+if (byId('addColl')) {
+  byId('addColl').onclick = ()=>{
+    DB.collections = DB.collections || [];
+    const nid = prompt('ID nuova colletta (es: gita-museo-ott-2025):');
+    if(!nid) return;
+    const title = prompt('Titolo da mostrare (es: Gita al museo – Ottobre 2025):', nid.replace(/-/g,' ').replace(/\b\w/g,m=>m.toUpperCase()));
+    const due = parseFloat(prompt('Quota attesa (€):','10.00')||'0')||0;
+    DB.collections.unshift({ id:nid, title, amount_due: due, archived:false, archived_at:null, statuses:{} });
 
-  renderDB();
-};
+    renderDB();
+  };
+}
 
-byId('allNP').onclick   = ()=>{ readRoster(); ensureStatuses(); DB.roster.forEach(n=>{ delete CURRENT.statuses[slug(n)]; }); renderGrid(); };
-byId('allOUT').onclick  = ()=>{ readRoster(); ensureStatuses(); DB.roster.forEach(n=>{ CURRENT.statuses[slug(n)]={type:'out'}; }); renderGrid(); };
-byId('allFULL').onclick = ()=>{ readRoster(); ensureStatuses(); const due=parseFloat(byId('collDue').value||'0')||0;
+if (byId('allNP')) byId('allNP').onclick   = ()=>{ readRoster(); ensureStatuses(); DB.roster.forEach(n=>{ delete CURRENT.statuses[slug(n)]; }); renderGrid(); };
+if (byId('allOUT')) byId('allOUT').onclick  = ()=>{ readRoster(); ensureStatuses(); DB.roster.forEach(n=>{ CURRENT.statuses[slug(n)]={type:'out'}; }); renderGrid(); };
+if (byId('allFULL')) byId('allFULL').onclick = ()=>{ readRoster(); ensureStatuses(); const due=parseFloat(byId('collDue').value||'0')||0;
                                 DB.roster.forEach(n=>{ CURRENT.statuses[slug(n)]={type:'paid', amount: due}; }); renderGrid(); };
 
 function syncHeaderToCurrent(){
@@ -246,22 +296,25 @@ function syncHeaderToCurrent(){
   }
 }
 
-byId('save').onclick = async ()=>{
-  try{
-    readRoster();
-    if(!Array.isArray(DB.collections) || DB.collections.length===0) throw new Error('Nessuna colletta presente.');
-    syncHeaderToCurrent();
-    DB.updated = new Date().toISOString();
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify(DB, null, 2))));
-    const res = await ghPut('docs/data/state.json', 'admin update '+(CURRENT.id||''), content, SHA);
-    SHA = res.content.sha;
-    alert('Salvato ✓');
-  }catch(e){ alert('Errore nel salvataggio: '+e.message); }
-};
+if (byId('save')) {
+  byId('save').onclick = async ()=>{
+    try{
+      readRoster();
+      if(!Array.isArray(DB.collections) || DB.collections.length===0) throw new Error('Nessuna colletta presente.');
+      syncHeaderToCurrent();
+      DB.updated = new Date().toISOString();
+      const content = btoa(unescape(encodeURIComponent(JSON.stringify(DB, null, 2))));
+      const res = await ghPut('docs/data/state.json', 'admin update '+(CURRENT.id||''), content, SHA);
+      SHA = res.content.sha;
+      alert('Salvato ✓');
+    }catch(e){ alert('Errore nel salvataggio: '+e.message); }
+  };
+}
 
 // Aggiorna header se l’utente modifica i campi
-['collTitle','collId','collDue','collArchived'].forEach(id=> byId(id).addEventListener('input', ()=> syncHeaderToCurrent()));
-
+['collTitle','collId','collDue','collArchived'].forEach(id=> byId(id)?.addEventListener('input', ()=> syncHeaderToCurrent()));
 </script>
+
+
 </body>
 </html>
