@@ -54,11 +54,15 @@
         "martina-maria": {
           "type": "paid",
           "amount": 25
+        },
+        "matilde-t": {
+          "type": "paid",
+          "amount": 25
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-09T22:21:07.184Z"
+  "updated": "2025-10-10T13:34:46.948Z"
 }
