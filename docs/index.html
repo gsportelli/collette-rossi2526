@@ -27,16 +27,6 @@
       --off:#7a7a7a;     /* out */
       --radius:10px;
     }
-    @media (prefers-color-scheme: dark){
-      :root{
-        --bg:#0e1116; --fg:#e6e6e6; --muted:#9aa3af;
-        --card:#0f141b; --card-border: rgba(255,255,255,.08);
-        --row-odd:#0f141b; --row-even:#151a22;
-        --accent:#4c8dff;
-
-        --ok:#5dd28a; --warn:#e7b757; --off:#9aa3af;
-      }
-    }
 
     /* ---------- Base ---------- */
     html, body { background: var(--bg); color: var(--fg); }
@@ -73,10 +63,6 @@
       font-size:.95rem; color:#222;
     }
     .progress .label { white-space:nowrap; font-variant-numeric: tabular-nums; }
-    @media (prefers-color-scheme: dark){
-      .progress .bar{ background: linear-gradient(0deg,#1b222d,#1f2733); }
-      .progress .overlay{ color:#ddd; }
-    }
     @media (max-width:560px){ .progress{ gap:.6rem; } .progress .label{ font-size:.95rem; } }
 
     /* ---------- Grid of rows ---------- */
@@ -117,13 +103,6 @@
       background: rgba(122, 122, 122, .12);
     }
     
-    /* Dark mode adjustments */
-    @media (prefers-color-scheme: dark) {
-      .status.paid    { background: rgba(93,210,138,.16); }
-      .status.pending { background: rgba(231,183,87,.18); }
-      .status.out     { background: rgba(154,163,175,.16); }
-    }
-
     /* Optional: also fade the name when “out” */
     .row.out .name{ color: var(--muted); text-decoration: line-through; text-decoration-thickness:.06em; }
     
