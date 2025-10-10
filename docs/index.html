@@ -19,7 +19,28 @@
     h1 { margin: 0 0 .75rem 0; }
     section { margin: 1.5rem 0 2rem; }
     h2 { margin: 0 0 .5rem 0; }
-    .grid { display:grid; grid-template-columns: 1fr auto; gap:.2rem .75rem; align-items:center; }
+
+    /* Container holds rows vertically */
+    .grid {
+      display: flex;
+      flex-direction: column;
+      gap: .2rem;            /* vertical spacing between rows */
+    }
+    
+    /* Each row lays out name + status in two columns */
+    .grid .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      column-gap: .75rem;    /* spacing between the two cells */
+      align-items: center;
+      padding: .25rem .5rem; /* breathing room */
+      border-radius: 4px;
+    }
+    
+    /* Stripe the whole row (background spans across both columns) */
+    .grid .row:nth-child(odd)  { background: #ffffff; }
+    .grid .row:nth-child(even) { background: #f5f5f5; }
+       
     .name { padding:.25rem 0; }
     .status { justify-self:end; font-variant-numeric: tabular-nums; }
     .paid { font-weight:600; }
@@ -155,22 +176,33 @@
           sec.appendChild(progressDiv);
 
           // Grid
-          const grid = document.createElement('div'); grid.className = 'grid';
+          const grid = document.createElement('div');
+          grid.className = 'grid';
+          
           roster.forEach(name => {
             const id = slug(name);
             const st = coll.statuses && coll.statuses[id];
-
+          
             let label = 'non pagato', cls = 'pending';
             if (st && st.type === 'out') { label = 'non partecipa'; cls = 'out'; }
             else if (st && (st.type === 'paid' || st.type === 'partial')) {
               label = EURO(st.amount || 0); cls = 'paid';
             }
-
-            const nameEl   = document.createElement('div'); nameEl.className = 'name';   nameEl.textContent = name;
-            const statusEl = document.createElement('div'); statusEl.className = 'status ' + cls; statusEl.textContent = label;
-
-            grid.appendChild(nameEl);
-            grid.appendChild(statusEl);
+          
+            const row = document.createElement('div');
+            row.className = 'row';
+          
+            const nameEl   = document.createElement('div');
+            nameEl.className = 'name';
+            nameEl.textContent = name;
+          
+            const statusEl = document.createElement('div');
+            statusEl.className = 'status ' + cls;
+            statusEl.textContent = label;
+          
+            row.appendChild(nameEl);
+            row.appendChild(statusEl);
+            grid.appendChild(row);
           });
 
           sec.appendChild(grid);
