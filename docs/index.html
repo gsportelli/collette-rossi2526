@@ -13,41 +13,129 @@
   <meta name="theme-color" content="#ffffff">
   <title>Collette</title>
   <style>
-    :root { --maxw: 900px; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-           margin: 2rem auto; max-width: var(--maxw); padding: 0 1rem; }
-    h1 { margin: 0 0 .75rem 0; }
-    section { margin: 1.5rem 0 2rem; }
-    h2 { margin: 0 0 .5rem 0; }
+    /* ---------- Design tokens ---------- */
+    :root{
+      --maxw: 900px;
 
-    /* Container holds rows vertically */
-    .grid {
-      display: flex;
-      flex-direction: column;
-      gap: .2rem;            /* vertical spacing between rows */
+      --bg:#ffffff; --fg:#111111; --muted:#666666;
+      --card:#ffffff; --card-border: rgba(0,0,0,.06);
+      --row-odd:#ffffff; --row-even:#f7f7f7;
+      --accent:#2f81f7;
+
+      --ok:#0a7a28;      /* paid */
+      --warn:#8a6d3b;    /* pending/partial */
+      --off:#7a7a7a;     /* out */
+      --radius:10px;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg:#0e1116; --fg:#e6e6e6; --muted:#9aa3af;
+        --card:#0f141b; --card-border: rgba(255,255,255,.08);
+        --row-odd:#0f141b; --row-even:#151a22;
+        --accent:#4c8dff;
+
+        --ok:#5dd28a; --warn:#e7b757; --off:#9aa3af;
+      }
+    }
+
+    /* ---------- Base ---------- */
+    html, body { background: var(--bg); color: var(--fg); }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin: 2rem auto; max-width: var(--maxw); padding: 0 1rem;
+      line-height: 1.35;
+    }
+    h1 { margin: 0 0 1rem 0; font-size: 1.35rem; }
+    h2 { margin: 0 0 .75rem 0; font-size: 1.05rem; }
+
+    /* ---------- Card sections ---------- */
+    section.card{
+      margin: 1.25rem 0 1.5rem;
+      padding: 1rem;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+
+    /* ---------- Progress component ---------- */
+    .progress { display:flex; align-items:center; gap:1rem; }
+    .progress .bar {
+      position: relative; height: 18px; border-radius: 999px;
+      overflow: hidden; background: linear-gradient(0deg,#eaeaea,#efefef);
+    }
+    .progress .bar > i {
+      display:block; height:100%; width:0%;
+      background: var(--accent); transition: width .3s ease;
+    }
+    .progress .overlay {
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      font-size:.95rem; color:#222;
+    }
+    .progress .label { white-space:nowrap; font-variant-numeric: tabular-nums; }
+    @media (prefers-color-scheme: dark){
+      .progress .bar{ background: linear-gradient(0deg,#1b222d,#1f2733); }
+      .progress .overlay{ color:#ddd; }
+    }
+    @media (max-width:560px){ .progress{ gap:.6rem; } .progress .label{ font-size:.95rem; } }
+
+    /* ---------- Grid of rows ---------- */
+    .grid{ display:flex; flex-direction:column; gap:.2rem; }
+    .grid .row{
+      display:grid; grid-template-columns: 1fr auto; column-gap:.75rem;
+      align-items:center; padding:.35rem .6rem; border-radius:6px;
+      background: var(--row-odd);
+      transition: background .15s ease, filter .15s ease;
+    }
+    .grid .row:nth-child(even){ background: var(--row-even); }
+    .grid .row:hover{ filter: brightness(0.98); }
+    .name{ letter-spacing:.1px; }
+    .status{ justify-self:end; font-variant-numeric: tabular-nums; }
+
+    /* Status “pills” */
+    .status.paid, .status.pending, .status.out {
+      padding: .1rem .55rem;
+      border-radius: 999px;
+      font-weight: 600;
     }
     
-    /* Each row lays out name + status in two columns */
-    .grid .row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      column-gap: .75rem;    /* spacing between the two cells */
-      align-items: center;
-      padding: .25rem .5rem; /* breathing room */
-      border-radius: 4px;
+    /* Paid = green */
+    .status.paid {
+      color: var(--ok);
+      background: rgba(10, 122, 40, .10);
     }
     
-    /* Stripe the whole row (background spans across both columns) */
-    .grid .row:nth-child(odd)  { background: #ffffff; }
-    .grid .row:nth-child(even) { background: #f5f5f5; }
-       
-    .name { padding:.25rem 0; }
-    .status { justify-self:end; font-variant-numeric: tabular-nums; }
-    .paid { font-weight:600; }
-    .out  { opacity:.8; font-style: italic; }
-    .pending { opacity:.95; }
-    .empty { margin: 2rem 0; font-size: 1.05rem; color: #444; }
-    footer { margin-top:2rem; font-size:.9rem; color:#666; }
+    /* Not paid = amber */
+    .status.pending {
+      color: var(--warn);
+      background: rgba(138, 109, 59, .14);
+    }
+    
+    /* Does not participate = gray */
+    .status.out {
+      color: var(--off);
+      background: rgba(122, 122, 122, .12);
+    }
+    
+    /* Dark mode adjustments */
+    @media (prefers-color-scheme: dark) {
+      .status.paid    { background: rgba(93,210,138,.16); }
+      .status.pending { background: rgba(231,183,87,.18); }
+      .status.out     { background: rgba(154,163,175,.16); }
+    }
+
+    /* Optional: also fade the name when “out” */
+    .row.out .name{ color: var(--muted); text-decoration: line-through; text-decoration-thickness:.06em; }
+    
+    /* ---------- Empty state & footer ---------- */
+    .empty { margin: 2rem 0; font-size: 1.05rem; color: var(--muted); }
+    footer { margin-top:2rem; font-size:.9rem; color: var(--muted); }
+
+    /* ---------- Accessibility / motion ---------- */
+    .row:focus-within{ outline: 2px solid var(--accent); outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce){
+      *{ transition:none !important; animation:none !important; }
+    }
   </style>
 </head>
 <body>
@@ -56,11 +144,33 @@
   <footer id="updated"></footer>
 
   <script>
-    // formattazione € stile it-IT: "12,00€"
-    const EURO = n => (n ?? 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '€';
+    // € formatting stile it-IT: "12,00€"
+    const EURO = n => (n ?? 0).toLocaleString('it-IT', {
+      minimumFractionDigits: 2, maximumFractionDigits: 2
+    }) + '€';
+
     // stessa funzione di slug usata nell'admin
-    const slug = s => s.normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase()
-                     .replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+    const slug = s => s.normalize("NFD")
+      .replace(/\p{Diacritic}/gu,"")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g,"-")
+      .replace(/(^-|-$)/g,"");
+
+    // small helper to build a progress component
+    function buildProgress({title, percent, paidCount, totalCount, collected, expected}) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'progress';
+      wrapper.innerHTML = `
+        <div style="flex:1;">
+          <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}">
+            <i style="width:${percent}%"></i>
+            <div class="overlay">${paidCount} / ${totalCount} partecipanti</div>
+          </div>
+        </div>
+        <div class="label">${EURO(collected)} / ${EURO(expected)}</div>
+      `;
+      return wrapper;
+    }
 
     fetch('./data/state.json?cb=' + Date.now())
       .then(r => r.json())
@@ -68,78 +178,28 @@
         const wrap   = document.getElementById('container');
         const footer = document.getElementById('updated');
 
-        const roster = (state.roster || []).slice().sort((a,b)=>a.localeCompare(b));
+        const roster  = (state.roster || []).slice().sort((a,b)=>a.localeCompare(b));
         const colsAll = (state.collections || []);
         const cols    = colsAll.filter(c => !c.archived);
 
-        // Progress bar and totals (for all active collections)
-        if (cols.length) {
-          // For each collection, show progress
-          let html = '';
-          cols.forEach(coll => {
-            // Get statuses for this collection
-            const statuses = coll.statuses || {};
-            // Participating persons (not 'out')
-            const participating = roster.filter(name => {
-              const id = slug(name);
-              return !(statuses[id] && statuses[id].type === 'out');
-            });
-            // Paid persons
-            const paid = participating.filter(name => {
-              const id = slug(name);
-              return statuses[id] && (statuses[id].type === 'paid' || statuses[id].type === 'partial');
-            });
-            // Total collected
-            const collected = paid.reduce((sum, name) => {
-              const id = slug(name);
-              return sum + (statuses[id]?.amount ?? 0);
-            }, 0);
-            // Expected total
-            const expected = (coll.amount_due ?? 0) * participating.length;
-            // Progress percent
-            const percent = expected > 0 ? Math.min(100, Math.round((collected/expected)*100)) : 0;
-
-            html += `
-              <section style="margin-bottom:1.5rem;">
-                <div style="font-weight:600; margin-bottom:.3rem;">${coll.title || coll.id || 'Colletta'}</div>
-                <div style="display:flex;align-items:center;gap:1rem;">
-                  <div style="flex:1;">
-                    <div style="background:#eee;border-radius:6px;overflow:hidden;height:18px;position:relative;">
-                      <div style="background:#2f81f7;height:100%;width:${percent}%;transition:width .3s;border-radius:6px;"></div>
-                      <div style="position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:.95rem;color:#222;">
-                        ${paid.length} / ${participating.length} partecipanti
-                      </div>
-                    </div>
-                  </div>
-                  <div style="white-space:nowrap;font-size:.98rem;">
-                    ${EURO(collected)} / ${EURO(expected)}
-                  </div>
-                </div>
-              </section>
-            `;
-          });
-        } else {
-          progressbar.innerHTML = '';
-        }
-
-        // nessuna colletta → mostra solo il messaggio semplice
+        // nessuna colletta → messaggio semplice
         if (!cols.length) {
           wrap.innerHTML = '<p class="empty">Non ci sono collette attive</p>';
           if (footer) footer.textContent = '';
           return;
         }
 
-        // ci sono collette → renderizza ogni sezione
-        wrap.innerHTML = ''; // clear container
+        // render di ogni colletta come "card"
+        wrap.innerHTML = '';
         cols.forEach(coll => {
-          const sec  = document.createElement('section');
+          const sec = document.createElement('section');
+          sec.className = 'card';
 
-          // Title
-          const h2   = document.createElement('h2');
+          const h2 = document.createElement('h2');
           h2.textContent = coll.title || coll.id || 'Colletta';
           sec.appendChild(h2);
 
-          // Progress bar row (below title)
+          // dati per la progress
           const statuses = coll.statuses || {};
           const participating = roster.filter(name => {
             const id = slug(name);
@@ -156,50 +216,45 @@
           const expected = (coll.amount_due ?? 0) * participating.length;
           const percent = expected > 0 ? Math.min(100, Math.round((collected/expected)*100)) : 0;
 
-          const progressDiv = document.createElement('div');
-          progressDiv.style.marginBottom = '1.2rem';
-          progressDiv.innerHTML = `
-            <div style="display:flex;align-items:center;gap:1rem;">
-              <div style="flex:1;">
-                <div style="background:#eee;border-radius:6px;overflow:hidden;height:18px;position:relative;">
-                  <div style="background:#2f81f7;height:100%;width:${percent}%;transition:width .3s;border-radius:6px;"></div>
-                  <div style="position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:.95rem;color:#222;">
-                    ${paid.length} / ${participating.length} partecipanti
-                  </div>
-                </div>
-              </div>
-              <div style="white-space:nowrap;font-size:.98rem;">
-                ${EURO(collected)} / ${EURO(expected)}
-              </div>
-            </div>
-          `;
-          sec.appendChild(progressDiv);
+          // progress component
+          const prog = buildProgress({
+            title: h2.textContent,
+            percent, paidCount: paid.length, totalCount: participating.length,
+            collected, expected
+          });
+          prog.style.marginBottom = '1rem';
+          sec.appendChild(prog);
 
-          // Grid
+          // tabella (grid) nomi + stato
           const grid = document.createElement('div');
           grid.className = 'grid';
-          
+
           roster.forEach(name => {
             const id = slug(name);
-            const st = coll.statuses && coll.statuses[id];
-          
+            const st = statuses[id];
+
             let label = 'non pagato', cls = 'pending';
-            if (st && st.type === 'out') { label = 'non partecipa'; cls = 'out'; }
-            else if (st && (st.type === 'paid' || st.type === 'partial')) {
+            let rowExtraClass = '';
+            if (st && st.type === 'out') {
+              label = 'non partecipa'; cls = 'out'; rowExtraClass = ' out';
+            } else if (st && st.type === 'paid') {
               label = EURO(st.amount || 0); cls = 'paid';
+            } else {
+              label = 'non pagato'; cls = 'pending';
             }
-          
+            
             const row = document.createElement('div');
-            row.className = 'row';
-          
-            const nameEl   = document.createElement('div');
+            row.className = 'row' + rowExtraClass;
+            row.title = `${name} — ${label}`;
+
+            const nameEl = document.createElement('div');
             nameEl.className = 'name';
             nameEl.textContent = name;
-          
+
             const statusEl = document.createElement('div');
             statusEl.className = 'status ' + cls;
             statusEl.textContent = label;
-          
+
             row.appendChild(nameEl);
             row.appendChild(statusEl);
             grid.appendChild(row);
