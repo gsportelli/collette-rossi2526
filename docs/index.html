@@ -23,7 +23,7 @@
       --accent:#2f81f7;
 
       --ok:#0a7a28;      /* paid */
-      --warn:#8a6d3b;    /* pending/partial */
+      --warn:#8a6d3b;    /* pending */
       --off:#7a7a7a;     /* out */
       --radius:10px;
     }
@@ -207,7 +207,7 @@
           });
           const paid = participating.filter(name => {
             const id = slug(name);
-            return statuses[id] && (statuses[id].type === 'paid' || statuses[id].type === 'partial');
+            return statuses[id] && statuses[id].type === 'paid';
           });
           const collected = paid.reduce((sum, name) => {
             const id = slug(name);

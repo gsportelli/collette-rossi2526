@@ -32,15 +32,15 @@
       "amount_due": 25,
       "statuses": {
         "ginevra": {
-          "type": "partial",
+          "type": "paid",
           "amount": 25
         },
         "bia": {
-          "type": "partial",
+          "type": "paid",
           "amount": 25
         },
         "laura": {
-          "type": "partial",
+          "type": "paid",
           "amount": 25
         },
         "francesco-b": {
@@ -48,7 +48,7 @@
           "amount": 27
         },
         "maria-elena": {
-          "type": "partial",
+          "type": "paid",
           "amount": 25
         },
         "martina-maria": {

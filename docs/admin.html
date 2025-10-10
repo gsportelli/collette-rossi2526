@@ -757,7 +757,7 @@ function getChanges() {
 function formatStatus(type, amount) {
   if (type === 'out') return 'Non partecipa';
   if (type === 'unpaid' || !type) return 'Non pagato';
-  if (type === 'paid' || type === 'partial') return `Versato ${amount}€`;
+  if (type === 'paid') return `Versato ${amount}€`;
   return type;
 }
 
@@ -766,20 +766,20 @@ function cloneStatus(st) {
   return JSON.parse(JSON.stringify(st));
 }
 
-function normalizeStatusForDisplay(st, due) {
-  // Uniformiamo 'paid'/'partial' in base all'importo vs quota
+function normalizeStatusForDisplay(st, _due) {
+  // Normalizziamo lo stato visibile con le sole opzioni supportate
   if (!st || st.type === 'unpaid') return { type: 'unpaid', amount: 0 };
   if (st.type === 'out') return { type: 'out' };
   const amt = Number(st.amount || 0);
-  return { type: (amt >= (due||0) ? 'paid' : 'partial'), amount: amt };
+  return { type: 'paid', amount: amt };
 }
 
 function isDowngrade(prev, next) {
-  // Downgrade se si passa da paid/partial → unpaid | out | paid/partial con importo diverso
-  const wasPaidLike = prev && (prev.type === 'paid' || prev.type === 'partial');
-  if (!wasPaidLike) return false;
+  // Downgrade se si passa da paid → unpaid | out | paid con importo diverso
+  const wasPaid = prev && prev.type === 'paid';
+  if (!wasPaid) return false;
   if (!next || next.type === 'unpaid' || next.type === 'out') return true;
-  if (next.type === 'paid' || next.type === 'partial') {
+  if (next.type === 'paid') {
     const a = Number(prev.amount || 0), b = Number(next.amount || 0);
     return a !== b;
   }
@@ -1175,7 +1175,7 @@ function renderGrid(){
     const applyStatusToModel = (s) => {
       if (!s || s.type === 'unpaid') { delete CURRENT.statuses[id]; return; }
       if (s.type === 'out') { CURRENT.statuses[id] = { type:'out' }; return; }
-      CURRENT.statuses[id] = { type:(s.amount >= due ? 'paid':'partial'), amount:Number(s.amount||0) };
+      CURRENT.statuses[id] = { type:'paid', amount:Number(s.amount||0) };
     };
     const applyStatusToControls = (s) => {
       if (!s || s.type === 'unpaid') {
@@ -1197,11 +1197,11 @@ function renderGrid(){
         l3.textContent = `Ha versato ${euro}€`;
       }
     };
-    const normalizeStatusForDisplay = (st, due) => {
+    const normalizeStatusForDisplay = (st, _due) => {
       if (!st || st.type === 'unpaid') return { type: 'unpaid', amount: 0 };
       if (st.type === 'out') return { type: 'out' };
       const amt = Number(st.amount || 0);
-      return { type: (amt >= (due||0) ? 'paid' : 'partial'), amount: amt };
+      return { type: 'paid', amount: amt };
     };
 
     // Stato iniziale UI + "committed"
@@ -1210,10 +1210,10 @@ function renderGrid(){
     let committed = JSON.parse(JSON.stringify(initial)); // snapshot confermato
 
     function isDowngrade(prev, next) {
-      const wasPaidLike = prev && (prev.type === 'paid' || prev.type === 'partial');
-      if (!wasPaidLike) return false;
+      const wasPaid = prev && prev.type === 'paid';
+      if (!wasPaid) return false;
       if (!next || next.type === 'unpaid' || next.type === 'out') return true;
-      if (next.type === 'paid' || next.type === 'partial') {
+      if (next.type === 'paid') {
         const a = Number(prev.amount || 0), b = Number(next.amount || 0);
         return a !== b;
       }
@@ -1254,7 +1254,7 @@ function renderGrid(){
     // Apertura dialog su "Ha versato"
     async function openPaidPrompt(prefillFromCurrentSelection) {
       // Valore di default: importo già registrato, altrimenti quota attesa arrotondata
-      const defaultAmount = prefillFromCurrentSelection && (committed.type==='paid' || committed.type==='partial')
+      const defaultAmount = prefillFromCurrentSelection && committed.type==='paid'
         ? Number(committed.amount||0)
         : Math.round(due);
 
@@ -1270,7 +1270,7 @@ function renderGrid(){
         applyStatusToControls(committed);
         return null;
       }
-      return { type: (v >= due ? 'paid' : 'partial'), amount: v };
+      return { type: 'paid', amount: v };
     }
 
     // 1) Primo click: seleziona + prompt
