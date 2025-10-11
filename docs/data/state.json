@@ -58,11 +58,15 @@
         "matilde-t": {
           "type": "paid",
           "amount": 25
+        },
+        "ludovica": {
+          "type": "paid",
+          "amount": 25
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-10T13:34:46.948Z"
+  "updated": "2025-10-11T10:08:08.680Z"
 }
