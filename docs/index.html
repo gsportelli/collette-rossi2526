@@ -115,14 +115,53 @@
     @media (prefers-reduced-motion: reduce){
       *{ transition:none !important; animation:none !important; }
     }
+
+    /* ---------- Sticky reload button ---------- */
+    #reload-btn {
+      position: sticky;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: .7rem 0;
+      z-index: 100;
+      cursor: pointer;
+      display: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      transition: background .15s;
+    }
+    #reload-btn:active {
+      background: #1a5bb8;
+    }
+    /* Only show if .standalone is on body */
+    body.standalone #reload-btn {
+      display: block;
+    }
   </style>
 </head>
 <body>
+  <button id="reload-btn" type="button">Aggiorna</button>
   <h1>Collette</h1>
   <div id="container"></div>
   <footer id="updated"></footer>
 
   <script>
+    // Detect iOS standalone mode and toggle button visibility
+    (function() {
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const isStandalone = window.navigator.standalone === true;
+      if (isIOS && isStandalone) {
+        document.body.classList.add('standalone');
+      }
+      document.getElementById('reload-btn').onclick = function() {
+        location.reload();
+      };
+    })();
+
     // € formatting stile it-IT: "12,00€"
     const EURO = n => (n ?? 0).toLocaleString('it-IT', {
       minimumFractionDigits: 2, maximumFractionDigits: 2
