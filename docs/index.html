@@ -125,22 +125,36 @@
       background: var(--accent);
       color: #fff;
       border: none;
-      font-size: 1rem;
+      font-size: .95rem;
       font-weight: 600;
-      padding: .7rem 0;
+      padding: .8rem 0;
       z-index: 100;
       cursor: pointer;
       display: none;
-      box-shadow: 0 2px 8px rgba(0,0,0,.06);
-      transition: background .15s;
+      box-shadow: 0 2px 12px rgba(47, 129, 247, .15), 0 1px 3px rgba(0,0,0,.08);
+      transition: background .2s ease, transform .15s ease, box-shadow .2s ease;
+      border-radius: 0;
+      letter-spacing: .02em;
+      -webkit-tap-highlight-color: transparent;
     }
     #reload-btn:active {
       background: #1a5bb8;
+      transform: scale(0.98);
+      box-shadow: 0 1px 4px rgba(47, 129, 247, .2);
     }
     /* Only show if .standalone is on body */
     body.standalone #reload-btn {
       display: block;
     }
+    /* Adjust body spacing when button is visible */
+    body.standalone {
+      margin-top: 0;
+      padding-top: 0;
+    }
+    body.standalone h1 {
+      margin-top: 1.5rem;
+    }
+
   </style>
 </head>
 <body>
