@@ -62,11 +62,15 @@
         "ludovica": {
           "type": "paid",
           "amount": 25
+        },
+        "matilde-b": {
+          "type": "paid",
+          "amount": 25
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-11T10:08:08.680Z"
+  "updated": "2025-10-14T08:45:03.848Z"
 }
