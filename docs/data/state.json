@@ -66,11 +66,15 @@
         "matilde-b": {
           "type": "paid",
           "amount": 25
+        },
+        "giulia-maria": {
+          "type": "paid",
+          "amount": 27
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-14T08:45:03.848Z"
+  "updated": "2025-10-14T12:50:45.166Z"
 }
