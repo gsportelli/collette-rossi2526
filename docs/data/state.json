@@ -70,11 +70,15 @@
         "giulia-maria": {
           "type": "paid",
           "amount": 27
+        },
+        "alessandro": {
+          "type": "paid",
+          "amount": 25
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-14T12:50:45.166Z"
+  "updated": "2025-10-15T14:49:45.559Z"
 }
