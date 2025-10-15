@@ -74,11 +74,15 @@
         "alessandro": {
           "type": "paid",
           "amount": 25
+        },
+        "dafne": {
+          "type": "paid",
+          "amount": 27
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-15T14:49:45.559Z"
+  "updated": "2025-10-15T22:45:02.309Z"
 }
