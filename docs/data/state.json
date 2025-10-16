@@ -82,11 +82,15 @@
         "zoe": {
           "type": "paid",
           "amount": 25
+        },
+        "mattia": {
+          "type": "paid",
+          "amount": 25
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-16T07:28:18.488Z"
+  "updated": "2025-10-16T21:47:36.981Z"
 }
