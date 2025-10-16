@@ -78,11 +78,15 @@
         "dafne": {
           "type": "paid",
           "amount": 27
+        },
+        "zoe": {
+          "type": "paid",
+          "amount": 25
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-15T22:45:02.309Z"
+  "updated": "2025-10-16T07:28:18.488Z"
 }
