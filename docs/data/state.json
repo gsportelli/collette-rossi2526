@@ -102,11 +102,15 @@
         "leonardo": {
           "type": "paid",
           "amount": 25
+        },
+        "tommaso": {
+          "type": "paid",
+          "amount": 10
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-17T08:56:07.718Z"
+  "updated": "2025-10-17T10:17:58.303Z"
 }
