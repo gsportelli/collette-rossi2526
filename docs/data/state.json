@@ -86,11 +86,15 @@
         "mattia": {
           "type": "paid",
           "amount": 25
+        },
+        "giulio": {
+          "type": "paid",
+          "amount": 27
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-16T21:47:36.981Z"
+  "updated": "2025-10-17T07:31:23.020Z"
 }
