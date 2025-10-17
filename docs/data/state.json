@@ -94,11 +94,15 @@
         "francesco-m": {
           "type": "paid",
           "amount": 25
+        },
+        "achille": {
+          "type": "paid",
+          "amount": 25
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-17T07:35:25.556Z"
+  "updated": "2025-10-17T08:48:06.834Z"
 }
