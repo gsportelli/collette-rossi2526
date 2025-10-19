@@ -110,11 +110,15 @@
         "emanuele": {
           "type": "paid",
           "amount": 25
+        },
+        "gioele": {
+          "type": "paid",
+          "amount": 25
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-17T19:06:27.501Z"
+  "updated": "2025-10-19T09:30:20.235Z"
 }
