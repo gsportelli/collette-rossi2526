@@ -121,12 +121,12 @@
         },
         "pietro": {
           "type": "paid",
-          "amount": 22
+          "amount": 25
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-21T13:15:08.307Z"
+  "updated": "2025-10-21T15:05:04.733Z"
 }
