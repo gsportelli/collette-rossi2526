@@ -114,11 +114,15 @@
         "gioele": {
           "type": "paid",
           "amount": 25
+        },
+        "amelie": {
+          "type": "paid",
+          "amount": 27
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-19T09:30:20.235Z"
+  "updated": "2025-10-21T11:47:43.574Z"
 }
