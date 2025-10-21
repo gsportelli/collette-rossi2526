@@ -122,11 +122,15 @@
         "pietro": {
           "type": "paid",
           "amount": 25
+        },
+        "enea": {
+          "type": "paid",
+          "amount": 25
         }
       },
       "archived": false,
       "archived_at": null
     }
   ],
-  "updated": "2025-10-21T15:05:04.733Z"
+  "updated": "2025-10-21T23:28:33.151Z"
 }
